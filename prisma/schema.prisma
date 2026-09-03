@@ -10,20 +10,20 @@ datasource db {
 // ─── User ────────────────────────────────────────────────
 
 model User {
-  id            String   @id @default(cuid())
-  firstName     String   @map("first_name")
-  lastName      String   @map("last_name")
-  email         String   @unique
-  phone         String?
-  passwordHash  String   @map("password_hash")
-  role          String   @default("USER")
-  status        String   @default("ACTIVE")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(cuid())
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  email        String   @unique
+  phone        String?
+  passwordHash String   @map("password_hash")
+  role         String   @default("USER")
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  addresses          Address[]
-  orders             Order[]
-  carts              Cart[]
+  addresses           Address[]
+  orders              Order[]
+  carts               Cart[]
   passwordResetTokens PasswordResetToken[]
 
   @@index([email])
@@ -74,19 +74,19 @@ model Category {
 // ─── Product ─────────────────────────────────────────────
 
 model Product {
-  id            String    @id @default(cuid())
-  categoryId    String    @map("category_id")
-  name          String
-  slug          String    @unique
-  description   String?
-  regularPrice  Decimal   @map("regular_price") @db.Decimal(10, 2)
-  salePrice     Decimal?  @map("sale_price") @db.Decimal(10, 2)
-  status        String    @default("DRAFT")
-  isFeatured    Boolean   @default(false) @map("is_featured")
-  metadata      Json?
-  deletedAt     DateTime? @map("deleted_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id           String    @id @default(cuid())
+  categoryId   String    @map("category_id")
+  name         String
+  slug         String    @unique
+  description  String?
+  regularPrice Decimal   @map("regular_price") @db.Decimal(10, 2)
+  salePrice    Decimal?  @map("sale_price") @db.Decimal(10, 2)
+  status       String    @default("DRAFT")
+  isFeatured   Boolean   @default(false) @map("is_featured")
+  metadata     Json?
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
   category   Category         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   images     ProductImage[]
@@ -101,14 +101,14 @@ model Product {
 // ─── ProductImage ────────────────────────────────────────
 
 model ProductImage {
-  id                  String   @id @default(cuid())
-  productId           String   @map("product_id")
-  imageUrl            String   @map("image_url")
-  cloudinaryPublicId  String?  @map("cloudinary_public_id")
-  altText             String?  @map("alt_text")
-  sortOrder           Int      @default(0) @map("sort_order")
-  isPrimary           Boolean  @default(false) @map("is_primary")
-  createdAt           DateTime @default(now()) @map("created_at")
+  id                 String   @id @default(cuid())
+  productId          String   @map("product_id")
+  imageUrl           String   @map("image_url")
+  cloudinaryPublicId String?  @map("cloudinary_public_id")
+  altText            String?  @map("alt_text")
+  sortOrder          Int      @default(0) @map("sort_order")
+  isPrimary          Boolean  @default(false) @map("is_primary")
+  createdAt          DateTime @default(now()) @map("created_at")
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -131,7 +131,7 @@ model ProductVariant {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  product          Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product          Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
   cartItems        CartItem[]
   orderItems       OrderItem[]
   inventoryHistory InventoryHistory[]
@@ -167,7 +167,7 @@ model InventoryHistory {
 model Cart {
   id        String   @id @default(cuid())
   userId    String?  @map("user_id")
-  sessionId String   @unique @map("session_id")
+  sessionId String?  @unique @map("session_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -223,9 +223,9 @@ model Order {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  user           User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
-  items          OrderItem[]
-  statusHistory  OrderStatusHistory[]
+  user          User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
 
   @@index([orderNumber])
   @@index([userId])
@@ -274,14 +274,14 @@ model OrderStatusHistory {
 // ─── ShippingRule ────────────────────────────────────────
 
 model ShippingRule {
-  id                   String   @id @default(cuid())
-  name                 String
-  type                 String
-  amount               Decimal  @db.Decimal(10, 2)
+  id                    String   @id @default(cuid())
+  name                  String
+  type                  String
+  amount                Decimal  @db.Decimal(10, 2)
   freeShippingThreshold Decimal? @map("free_shipping_threshold") @db.Decimal(10, 2)
-  isActive             Boolean  @default(true) @map("is_active")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  isActive              Boolean  @default(true) @map("is_active")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
 
   @@map("shipping_rules")
 }
@@ -289,17 +289,17 @@ model ShippingRule {
 // ─── HomepageContent ─────────────────────────────────────
 
 model HomepageContent {
-  id         String   @id @default(cuid())
-  sectionType String  @map("section_type")
-  title      String?
-  subtitle   String?
-  imageUrl   String?  @map("image_url")
-  buttonText String?  @map("button_text")
-  buttonUrl  String?  @map("button_url")
-  sortOrder  Int      @default(0) @map("sort_order")
-  isActive   Boolean  @default(true) @map("is_active")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  sectionType String   @map("section_type")
+  title       String?
+  subtitle    String?
+  imageUrl    String?  @map("image_url")
+  buttonText  String?  @map("button_text")
+  buttonUrl   String?  @map("button_url")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   @@map("homepage_content")
 }

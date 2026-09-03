@@ -6,6 +6,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { useCart } from "@/features/cart/CartProvider";
 
 /**
  * Customer login page
@@ -13,6 +14,7 @@ import Button from "@/components/ui/Button";
  */
 export default function LoginPage() {
   const router = useRouter();
+  const { mergeCart } = useCart();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -83,6 +85,8 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
+
+      await mergeCart();
 
       router.push("/account");
       router.refresh();
