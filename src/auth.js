@@ -4,12 +4,7 @@ import bcrypt from "bcryptjs";
 import prisma from "./lib/db";
 import { loginSchema } from "./validators/auth.validators";
 
-export const {
-  handlers,
-  auth,
-  signIn,
-  signOut,
-} = NextAuth({
+export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
   },
@@ -36,7 +31,10 @@ export const {
           return null;
         }
 
-        const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+        const isPasswordValid = await bcrypt.compare(
+          password,
+          user.passwordHash,
+        );
         if (!isPasswordValid) {
           return null;
         }
