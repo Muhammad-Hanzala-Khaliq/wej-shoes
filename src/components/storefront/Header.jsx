@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { useCart } from "@/features/cart/CartProvider";
+import CartBadge from "./CartBadge";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -14,7 +14,6 @@ const navLinks = [
 
 export default function Header() {
   const { data: session, status } = useSession();
-  const { cart } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -69,19 +68,7 @@ export default function Header() {
               </svg>
             </Link>
 
-            <Link
-              href="/cart"
-              className="relative p-2 text-gray-600 hover:text-black transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              {cart.itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gray-900 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
-                  {cart.itemCount > 99 ? "99+" : cart.itemCount}
-                </span>
-              )}
-            </Link>
+            <CartBadge />
 
             <div className="hidden md:block" ref={dropdownRef}>
               {status === "loading" ? (
