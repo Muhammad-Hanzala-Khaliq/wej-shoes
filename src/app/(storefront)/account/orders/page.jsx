@@ -43,28 +43,28 @@ export default function OrderHistoryPage() {
   }, [status, page]);
 
   const statusColors = {
-    PENDING: "bg-yellow-100 text-yellow-800",
-    CONFIRMED: "bg-blue-100 text-blue-800",
-    PROCESSING: "bg-indigo-100 text-indigo-800",
-    SHIPPED: "bg-purple-100 text-purple-800",
-    DELIVERED: "bg-green-100 text-green-800",
-    COMPLETED: "bg-green-100 text-green-800",
-    CANCELLED: "bg-red-100 text-red-800",
+    PENDING: "badge badge-warning",
+    CONFIRMED: "badge badge-brand",
+    PROCESSING: "badge badge-brand",
+    SHIPPED: "badge badge-neutral",
+    DELIVERED: "badge badge-success",
+    COMPLETED: "badge badge-success",
+    CANCELLED: "badge badge-danger",
   };
 
   if (status === "loading" || isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold mb-8">My Orders</h1>
+      <div className="container-page py-12">
+        <h1 className="heading-lg mb-8">My Orders</h1>
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg p-6 animate-pulse border border-gray-100">
+            <div key={i} className="card p-6 animate-pulse">
               <div className="flex justify-between">
                 <div className="space-y-2">
-                  <div className="h-4 bg-gray-200 rounded w-32" />
-                  <div className="h-3 bg-gray-200 rounded w-24" />
+                  <div className="h-4 rounded w-32" style={{ background: 'var(--surface-soft)' }} />
+                  <div className="h-3 rounded w-24" style={{ background: 'var(--surface-soft)' }} />
                 </div>
-                <div className="h-6 bg-gray-200 rounded w-20" />
+                <div className="h-6 rounded w-20" style={{ background: 'var(--surface-soft)' }} />
               </div>
             </div>
           ))}
@@ -74,13 +74,14 @@ export default function OrderHistoryPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-8">My Orders</h1>
+    <div className="container-page py-12">
+      <h1 className="heading-lg mb-8">My Orders</h1>
 
       {orders.length === 0 ? (
         <div className="text-center py-16">
           <svg
-            className="mx-auto h-20 w-20 text-gray-300 mb-4"
+            className="mx-auto h-20 w-20 mb-4"
+            style={{ color: 'var(--text-muted)' }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -92,11 +93,11 @@ export default function OrderHistoryPage() {
               d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
             />
           </svg>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">No orders yet</h2>
-          <p className="text-gray-500 mb-6">Start shopping to place your first order.</p>
+          <h2 className="heading-md mb-2">No orders yet</h2>
+          <p className="mb-6" style={{ color: 'var(--text-muted)' }}>Start shopping to place your first order.</p>
           <Link
             href="/collections/men"
-            className="inline-block bg-gray-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+            className="btn btn-primary"
           >
             Start Shopping
           </Link>
@@ -107,29 +108,29 @@ export default function OrderHistoryPage() {
             {orders.map((order) => (
               <div
                 key={order.id}
-                className="bg-white rounded-lg border border-gray-100 p-4 sm:p-6"
+                className="card p-4 sm:p-6"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <Link
                       href={`/order/${order.orderNumber}`}
-                      className="font-semibold text-gray-900 hover:underline"
+                      className="link"
                     >
                       {order.orderNumber}
                     </Link>
-                    <p className="text-sm text-gray-500 mt-0.5">
+                    <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
                       {new Date(order.createdAt).toLocaleDateString("en-PK", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
                       })}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                       {order._count.items} {order._count.items === 1 ? "item" : "items"}
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${statusColors[order.orderStatus] || "bg-gray-100 text-gray-800"}`}>
+                    <span className={statusColors[order.orderStatus] || "badge badge-neutral"}>
                       {order.orderStatus}
                     </span>
                     <div className="text-right">
@@ -141,23 +142,22 @@ export default function OrderHistoryPage() {
             ))}
           </div>
 
-          {/* Pagination */}
           {pagination && pagination.totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-8">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn btn-outline"
               >
                 Previous
               </button>
-              <span className="px-4 py-2 text-sm text-gray-600">
+              <span className="px-4 py-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
                 Page {page} of {pagination.totalPages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
                 disabled={page === pagination.totalPages}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn btn-outline"
               >
                 Next
               </button>

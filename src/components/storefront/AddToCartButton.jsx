@@ -46,54 +46,98 @@ export default function AddToCartButton({ variant, product, disabled }) {
 
   return (
     <div className="space-y-4">
-      {!variant && (
-        <p className="text-sm text-gray-500">Please select color and size</p>
-      )}
-      {variant && variant.stockQuantity === 0 && (
-        <p className="text-sm text-red-600">This variant is out of stock</p>
-      )}
-
+      {/* Quantity stepper + Add to cart button */}
       {variant && variant.stockQuantity > 0 && (
-        <div className="flex items-center gap-4">
-          <label className="text-sm font-medium text-gray-700">Quantity</label>
-          <div className="flex items-center border rounded-lg">
+        <div className="flex items-center gap-3">
+          {/* Quantity stepper - pill */}
+          <div
+            className="flex items-center rounded-full"
+            style={{
+              border: "1px solid var(--border-strong)",
+              background: "var(--surface)",
+            }}
+          >
             <button
               onClick={handleDecrease}
               disabled={quantity <= 1}
-              className="px-3 py-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-10 h-10 flex items-center justify-center text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ color: "var(--text-primary)" }}
             >
               -
             </button>
-            <span className="px-4 py-2 text-sm font-medium min-w-[40px] text-center">
+            <span
+              className="w-10 h-10 flex items-center justify-center text-sm font-medium border-x"
+              style={{
+                color: "var(--text-primary)",
+                borderColor: "var(--border-strong)",
+              }}
+            >
               {quantity}
             </span>
             <button
               onClick={handleIncrease}
-              className="px-3 py-2 text-gray-600 hover:bg-gray-100"
+              disabled={quantity >= maxStock}
+              className="w-10 h-10 flex items-center justify-center text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{ color: "var(--text-primary)" }}
             >
               +
             </button>
           </div>
+
+          {/* Add to cart - black pill */}
+          <button
+            onClick={handleAddToCart}
+            disabled={isDisabled}
+            className="flex-1 h-10 rounded-full font-semibold text-sm transition-colors"
+            style={{
+              background: added
+                ? "var(--success)"
+                : isDisabled
+                  ? "#e5e5e5"
+                  : "#1a1714",
+              color: added
+                ? "#fff"
+                : isDisabled
+                  ? "#a3a3a3"
+                  : "#fff",
+              cursor: isDisabled ? "not-allowed" : "pointer",
+            }}
+            onMouseEnter={(e) => {
+              if (!isDisabled && !added) e.target.style.background = "#292524";
+            }}
+            onMouseLeave={(e) => {
+              if (!isDisabled && !added) e.target.style.background = "#1a1714";
+            }}
+          >
+            {added ? "Added ✓" : "Add to cart"}
+          </button>
         </div>
       )}
 
-      {quantityError && (
-        <p className="text-sm text-red-600">{quantityError}</p>
+      {/* Out of stock state */}
+      {variant && variant.stockQuantity === 0 && (
+        <div
+          className="h-10 rounded-full flex items-center justify-center font-semibold text-sm"
+          style={{ background: "#e5e5e5", color: "#a3a3a3" }}
+        >
+          Out of stock
+        </div>
       )}
 
-      <button
-        onClick={handleAddToCart}
-        disabled={isDisabled}
-        className={`w-full py-3 px-6 rounded-lg font-semibold text-sm transition-colors ${
-          added
-            ? "bg-green-600 text-white"
-            : isDisabled
-              ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-              : "bg-gray-900 text-white hover:bg-gray-800"
-        }`}
-      >
-        {added ? "Added to Cart!" : "Add to Cart"}
-      </button>
+      {/* No variant selected - full width button disabled */}
+      {!variant && (
+        <div
+          className="h-10 rounded-full flex items-center justify-center font-semibold text-sm"
+          style={{ background: "#e5e5e5", color: "#a3a3a3" }}
+        >
+          Add to cart
+        </div>
+      )}
+
+      {/* Error text */}
+      {quantityError && (
+        <p className="text-xs" style={{ color: "var(--danger)" }}>{quantityError}</p>
+      )}
     </div>
   );
 }

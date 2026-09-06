@@ -1,24 +1,36 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
-import { getCategories, createCategory } from "@/features/catalog/category.service";
+import {
+  getCategoryById,
+  updateCategory,
+  deleteCategory,
+} from "@/features/catalog/category.service";
 
 /**
- * GET handler - Fetch all categories
- * @returns {NextResponse}
+ * GET handler - Fetch single category by id
  */
-export async function GET() {
+export async function GET(request, { params }) {
   try {
     const session = await requireAdmin();
-
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const categories = await getCategories({ status: null });
+    const { id } = await params;
 
-    return NextResponse.json({ categories });
+    if (!id) {
+      return NextResponse.json({ error: "Category ID is required" }, { status: 400 });
+    }
+
+    const category = await getCategoryById(id);
+
+    if (!category) {
+      return NextResponse.json({ error: "Category not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({ category });
   } catch (error) {
-    console.error("GET /api/admin/categories error:", error);
+    console.error("GET /api/admin/categories/[id] error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -27,44 +39,62 @@ export async function GET() {
 }
 
 /**
- * POST handler - Create new category
- * @param {Request} request
- * @returns {NextResponse}
+ * PUT handler - Update category
  */
-export async function POST(request) {
+export async function PUT(request, { params }) {
   try {
     const session = await requireAdmin();
-
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const { id } = await params;
 
-    if (!body.name || !body.gender) {
-      return NextResponse.json(
-        { error: "Name and gender are required" },
-        { status: 400 }
-      );
+    if (!id) {
+      return NextResponse.json({ error: "Category ID is required" }, { status: 400 });
     }
 
-    const category = await createCategory(body);
+    const body = await request.json();
+    const category = await updateCategory(id, body);
 
-    return NextResponse.json({ category }, { status: 201 });
+    return NextResponse.json({ category });
   } catch (error) {
-    console.error("POST /api/admin/categories error:", error);
+    console.error("PUT /api/admin/categories/[id] error:", error);
+
+    if (error.message === "Category not found") {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
 
     if (error.message.includes("already exists")) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
 
-    if (error.message.includes("required") || error.message.includes("Gender")) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 400 }
+    );
+  }
+}
+
+/**
+ * DELETE handler - Soft delete category
+ */
+export async function DELETE(request, { params }) {
+  try {
+    const session = await requireAdmin();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+    const result = await deleteCategory(id);
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("DELETE /api/admin/categories/[id] error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: error.message || "Failed to delete category" },
+      { status: 400 }
     );
   }
 }

@@ -37,7 +37,9 @@ export default function VariantSelector({ variants = [], selectedVariant, onSele
     onSelectVariant(null);
   };
 
-  const handleSizeSelect = (size) => {
+  const handleSizeChange = (e) => {
+    const size = e.target.value;
+    if (!size) return;
     const stock = getStockForSize(size);
     if (stock > 0) {
       setSelectedSize(size);
@@ -49,26 +51,29 @@ export default function VariantSelector({ variants = [], selectedVariant, onSele
 
   return (
     <div className="space-y-6">
+      {/* Colors */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">
-          Color {selectedColor && `- ${selectedColor}`}
-        </h3>
+        <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>
+          {selectedColor ? selectedColor : "Select color"}
+        </p>
         <div className="flex flex-wrap gap-2">
           {colors.map((color) => {
             const colorVariants = variants.filter((v) => v.color === color);
             const hasStock = colorVariants.some((v) => v.stockQuantity > 0);
+            const isSelected = selectedColor === color;
             return (
               <button
                 key={color}
                 onClick={() => handleColorSelect(color)}
                 disabled={!hasStock}
-                className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
-                  selectedColor === color
-                    ? "bg-gray-900 text-white border-gray-900"
-                    : hasStock
-                      ? "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
-                      : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through"
-                }`}
+                className="flex items-center justify-center w-14 h-14 rounded-lg text-[11px] font-medium transition-all duration-200"
+                style={{
+                  background: "#f2f2f2",
+                  border: isSelected ? "2px solid #1a1714" : "2px solid transparent",
+                  opacity: hasStock ? 1 : 0.4,
+                  textDecoration: hasStock && !isSelected ? "none" : hasStock ? "none" : "line-through",
+                  color: "var(--text-primary)",
+                }}
               >
                 {color}
               </button>
@@ -77,53 +82,69 @@ export default function VariantSelector({ variants = [], selectedVariant, onSele
         </div>
       </div>
 
+      {/* Size dropdown */}
       {selectedColor && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Size</h3>
-          <div className="flex flex-wrap gap-2">
-            {sizesForColor.map((size) => {
-              const stock = getStockForSize(size);
-              const isAvailable = stock > 0;
-              return (
-                <button
-                  key={size}
-                  onClick={() => handleSizeSelect(size)}
-                  disabled={!isAvailable}
-                  className={`min-w-[60px] px-4 py-2 text-sm rounded-lg border transition-colors ${
-                    selectedSize === size
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : isAvailable
-                        ? "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
-                        : "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through"
-                  }`}
-                >
-                  {size}
-                </button>
-              );
-            })}
+          <p className="text-sm mb-3" style={{ color: "var(--text-secondary)" }}>
+            {selectedSize ? `Size: ${selectedSize}` : "Select size"}
+          </p>
+          <div className="relative">
+            <select
+              value={selectedSize || ""}
+              onChange={handleSizeChange}
+              className="w-full appearance-none px-4 py-3 pr-10 text-sm font-medium rounded-full transition-colors"
+              style={{
+                border: "1px solid var(--border-strong)",
+                background: "var(--surface)",
+                color: "var(--text-primary)",
+                outline: "none",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "var(--brand)";
+                e.target.style.boxShadow = "0 0 0 3px var(--brand-soft)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "var(--border-strong)";
+                e.target.style.boxShadow = "none";
+              }}
+            >
+              <option value="">Select a size</option>
+              {sizesForColor.map((size) => {
+                const stock = getStockForSize(size);
+                const isAvailable = stock > 0;
+                return (
+                  <option key={size} value={size} disabled={!isAvailable}>
+                    {size}
+                    {!isAvailable ? " (Out of stock)" : ""}
+                  </option>
+                );
+              })}
+            </select>
+            <div
+              className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none"
+              style={{ color: "var(--text-muted)" }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Stock indicator */}
       {currentVariant && (
-        <div>
-          {isInStock ? (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              In Stock
-            </span>
-          ) : (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-              Out of Stock
-            </span>
-          )}
+        <div className="text-sm" style={{ color: isInStock ? "var(--text-muted)" : "var(--danger)" }}>
+          {isInStock ? "In stock" : "Out of stock"}
         </div>
       )}
 
+      {/* Helper text */}
       {!selectedColor && (
-        <p className="text-sm text-gray-500">Please select a color</p>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Select color</p>
       )}
       {selectedColor && !selectedSize && (
-        <p className="text-sm text-gray-500">Please select a size</p>
+        <p className="text-sm" style={{ color: "var(--text-muted)" }}>Select size</p>
       )}
     </div>
   );

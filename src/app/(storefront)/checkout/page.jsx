@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const [shippingRules, setShippingRules] = useState([]);
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -42,12 +43,24 @@ export default function CheckoutPage() {
     notes: "",
   });
 
-  // Redirect if cart is empty
   useEffect(() => {
     if (!cartLoading && (!cart.items || cart.items.length === 0)) {
       router.push("/cart");
     }
   }, [cart, cartLoading, router]);
+
+  useEffect(() => {
+    async function fetchShippingRules() {
+      try {
+        const res = await fetch("/api/shipping-rules");
+        if (res.ok) {
+          const data = await res.json();
+          setShippingRules(data);
+        }
+      } catch {}
+    }
+    fetchShippingRules();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -60,11 +73,9 @@ export default function CheckoutPage() {
 
   const validate = () => {
     const errors = {};
-
     if (!form.fullName || form.fullName.trim().length < 2) {
       errors.fullName = "Full name is required";
     }
-
     if (!form.phone) {
       errors.phone = "Phone number is required";
     } else {
@@ -73,19 +84,15 @@ export default function CheckoutPage() {
         errors.phone = "Invalid Pakistani phone (e.g., 03XXXXXXXXX)";
       }
     }
-
     if (!form.addressLine1 || form.addressLine1.trim().length < 5) {
       errors.addressLine1 = "Address is required (min 5 characters)";
     }
-
     if (!form.city || form.city.trim().length < 2) {
       errors.city = "City is required";
     }
-
     if (!form.province) {
       errors.province = "Province is required";
     }
-
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -93,9 +100,7 @@ export default function CheckoutPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-
     if (!validate()) return;
-
     setIsSubmitting(true);
 
     try {
@@ -118,7 +123,6 @@ export default function CheckoutPage() {
       });
 
       const data = await response.json();
-
       if (!response.ok) {
         if (data.errors) {
           setFieldErrors(data.errors);
@@ -128,9 +132,8 @@ export default function CheckoutPage() {
         setIsSubmitting(false);
         return;
       }
-
       router.push(`/order-confirmation/${data.orderNumber}`);
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
       setIsSubmitting(false);
     }
@@ -138,222 +141,214 @@ export default function CheckoutPage() {
 
   if (cartLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <div className="container-page section">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4" />
+          <div className="h-8 rounded w-1/4" style={{ background: "var(--surface-soft)" }} />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-12 bg-gray-200 rounded" />
+                <div key={i} className="h-12 rounded" style={{ background: "var(--surface-soft)" }} />
               ))}
             </div>
-            <div className="h-64 bg-gray-200 rounded" />
+            <div className="h-64 rounded" style={{ background: "var(--surface-soft)" }} />
           </div>
         </div>
       </div>
     );
   }
 
-  if (!cart.items || cart.items.length === 0) {
-    return null;
-  }
+  if (!cart.items || cart.items.length === 0) return null;
 
-  const shippingFee = cart.subtotal >= 5000 ? 0 : 200;
-  const total = cart.subtotal + shippingFee;
+  let shippingFee = 200;
+  let freeShippingThreshold = 5000;
+  if (shippingRules.length > 0) {
+    const activeRule = shippingRules.find((r) => r.type === "FLAT" || r.type === "FREE") || shippingRules[0];
+    if (activeRule) {
+      shippingFee = Number(activeRule.amount) || 0;
+      freeShippingThreshold = activeRule.freeShippingThreshold ? Number(activeRule.freeShippingThreshold) : null;
+    }
+  }
+  const qualifiesForFreeShipping = freeShippingThreshold && cart.subtotal >= freeShippingThreshold;
+  const finalShippingFee = qualifiesForFreeShipping ? 0 : shippingFee;
+  const total = cart.subtotal + finalShippingFee;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+    <div className="container-page section">
+      <h1 className="heading-lg mb-8" style={{ color: "var(--text-primary)" }}>Checkout</h1>
 
       {session ? (
-        <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+        <div
+          className="mb-6 p-3 rounded-lg text-sm"
+          style={{ background: "var(--brand-soft)", color: "var(--brand)" }}
+        >
           Logged in as <span className="font-medium">{session.user.email}</span>
         </div>
       ) : (
-        <div className="mb-6 p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600">
+        <div
+          className="mb-6 p-3 rounded-lg text-sm"
+          style={{ background: "var(--surface-soft)", color: "var(--text-secondary)" }}
+        >
           Checking out as guest.{" "}
-          <Link href="/login" className="text-blue-600 hover:underline font-medium">
-            Login
-          </Link>{" "}
+          <Link href="/login" className="link">Login</Link>{" "}
           to track your orders.
         </div>
       )}
 
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+        <div
+          className="mb-6 p-4 rounded-lg text-sm"
+          style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
+        >
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Shipping Address */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-lg border border-gray-100 p-6">
-              <h2 className="text-lg font-semibold mb-4">Shipping Address</h2>
-
+            <div className="card p-6">
+              <h2 className="heading-md mb-4" style={{ color: "var(--text-primary)" }}>Shipping Address</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Full Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name <span className="text-red-500">*</span>
+                  <label className="label">
+                    Full Name <span style={{ color: "var(--danger)" }}>*</span>
                   </label>
                   <input
                     type="text"
                     name="fullName"
                     value={form.fullName}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-                      fieldErrors.fullName ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`input ${fieldErrors.fullName ? "input-error" : ""}`}
                     placeholder="John Doe"
                   />
                   {fieldErrors.fullName && (
-                    <p className="text-red-500 text-xs mt-1">{fieldErrors.fullName}</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{fieldErrors.fullName}</p>
                   )}
                 </div>
 
-                {/* Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone <span className="text-red-500">*</span>
+                  <label className="label">
+                    Phone <span style={{ color: "var(--danger)" }}>*</span>
                   </label>
                   <input
                     type="tel"
                     name="phone"
                     value={form.phone}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-                      fieldErrors.phone ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`input ${fieldErrors.phone ? "input-error" : ""}`}
                     placeholder="03XXXXXXXXX"
                   />
                   {fieldErrors.phone && (
-                    <p className="text-red-500 text-xs mt-1">{fieldErrors.phone}</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{fieldErrors.phone}</p>
                   )}
                 </div>
 
-                {/* Email */}
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email <span className="text-gray-400">(optional)</span>
+                  <label className="label">
+                    Email <span style={{ color: "var(--text-muted)" }}>(optional)</span>
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={form.email}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    className="input"
                     placeholder="you@example.com"
                   />
                 </div>
 
-                {/* Address Line 1 */}
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address Line 1 <span className="text-red-500">*</span>
+                  <label className="label">
+                    Address Line 1 <span style={{ color: "var(--danger)" }}>*</span>
                   </label>
                   <input
                     type="text"
                     name="addressLine1"
                     value={form.addressLine1}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-                      fieldErrors.addressLine1 ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`input ${fieldErrors.addressLine1 ? "input-error" : ""}`}
                     placeholder="House #, Street, Area"
                   />
                   {fieldErrors.addressLine1 && (
-                    <p className="text-red-500 text-xs mt-1">{fieldErrors.addressLine1}</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{fieldErrors.addressLine1}</p>
                   )}
                 </div>
 
-                {/* Address Line 2 */}
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address Line 2 <span className="text-gray-400">(optional)</span>
+                  <label className="label">
+                    Address Line 2 <span style={{ color: "var(--text-muted)" }}>(optional)</span>
                   </label>
                   <input
                     type="text"
                     name="addressLine2"
                     value={form.addressLine2}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    className="input"
                     placeholder="Landmark, Near etc."
                   />
                 </div>
 
-                {/* City */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City <span className="text-red-500">*</span>
+                  <label className="label">
+                    City <span style={{ color: "var(--danger)" }}>*</span>
                   </label>
                   <input
                     type="text"
                     name="city"
                     value={form.city}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-                      fieldErrors.city ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`input ${fieldErrors.city ? "input-error" : ""}`}
                     placeholder="Lahore"
                   />
                   {fieldErrors.city && (
-                    <p className="text-red-500 text-xs mt-1">{fieldErrors.city}</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{fieldErrors.city}</p>
                   )}
                 </div>
 
-                {/* Province */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Province <span className="text-red-500">*</span>
+                  <label className="label">
+                    Province <span style={{ color: "var(--danger)" }}>*</span>
                   </label>
                   <select
                     name="province"
                     value={form.province}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 ${
-                      fieldErrors.province ? "border-red-500" : "border-gray-300"
-                    }`}
+                    className={`input ${fieldErrors.province ? "input-error" : ""}`}
                   >
                     <option value="">Select province</option>
                     {PROVINCES.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
+                      <option key={p} value={p}>{p}</option>
                     ))}
                   </select>
                   {fieldErrors.province && (
-                    <p className="text-red-500 text-xs mt-1">{fieldErrors.province}</p>
+                    <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{fieldErrors.province}</p>
                   )}
                 </div>
 
-                {/* Postal Code */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Postal Code <span className="text-gray-400">(optional)</span>
+                  <label className="label">
+                    Postal Code <span style={{ color: "var(--text-muted)" }}>(optional)</span>
                   </label>
                   <input
                     type="text"
                     name="postalCode"
                     value={form.postalCode}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    className="input"
                     placeholder="54000"
                   />
                 </div>
 
-                {/* Notes */}
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Order Notes <span className="text-gray-400">(optional)</span>
+                  <label className="label">
+                    Order Notes <span style={{ color: "var(--text-muted)" }}>(optional)</span>
                   </label>
                   <textarea
                     name="notes"
                     value={form.notes}
                     onChange={handleChange}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    className="input"
                     placeholder="Any special instructions for delivery..."
                   />
                 </div>
@@ -361,18 +356,19 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-gray-50 rounded-lg border border-gray-100 p-6 sticky top-24">
-              <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
+            <div className="card p-6 sticky top-24" style={{ background: "var(--surface-soft)" }}>
+              <h2 className="heading-md mb-4" style={{ color: "var(--text-primary)" }}>Order Summary</h2>
 
-              {/* Cart Items */}
               <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
                 {cart.items.map((item) => {
                   const { product } = item;
                   return (
                     <div key={item.id} className="flex gap-3">
-                      <div className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-gray-200">
+                      <div
+                        className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden"
+                        style={{ background: "var(--surface)" }}
+                      >
                         {product.image && (
                           <img
                             src={getOptimizedUrl(product.image, 120)}
@@ -382,14 +378,13 @@ export default function CheckoutPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 line-clamp-1">
+                        <p className="text-sm font-medium line-clamp-1" style={{ color: "var(--text-primary)" }}>
                           {product.name}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          {item.variant.color}
-                          {item.variant.size && ` / ${item.variant.size}`} × {item.quantity}
+                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                          {item.variant.color}{item.variant.size && ` / ${item.variant.size}`} &times; {item.quantity}
                         </p>
-                        <p className="text-sm font-medium mt-0.5">
+                        <p className="text-sm font-medium mt-0.5" style={{ color: "var(--text-primary)" }}>
                           {formatPrice(product.salePrice ? product.salePrice * item.quantity : product.regularPrice * item.quantity)}
                         </p>
                       </div>
@@ -398,39 +393,45 @@ export default function CheckoutPage() {
                 })}
               </div>
 
-              <div className="border-t border-gray-200 pt-4 space-y-2 text-sm">
+              <div className="space-y-2 text-sm" style={{ borderTop: "1px solid var(--border)", paddingTop: "1rem" }}>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span>{formatPrice(cart.subtotal)}</span>
+                  <span style={{ color: "var(--text-secondary)" }}>Subtotal</span>
+                  <span style={{ color: "var(--text-primary)" }}>{formatPrice(cart.subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping</span>
-                  <span className={shippingFee === 0 ? "text-green-600 font-medium" : ""}>
-                    {shippingFee === 0 ? "Free" : formatPrice(shippingFee)}
+                  <span style={{ color: "var(--text-secondary)" }}>Shipping</span>
+                  <span
+                    className="font-medium"
+                    style={{ color: finalShippingFee === 0 ? "var(--success)" : "var(--text-primary)" }}
+                  >
+                    {finalShippingFee === 0 ? "Free" : formatPrice(finalShippingFee)}
                   </span>
                 </div>
-                {shippingFee > 0 && (
-                  <p className="text-xs text-gray-500">
-                    Free shipping on orders over PKR 5,000
+                {finalShippingFee > 0 && freeShippingThreshold && (
+                  <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                    Free shipping on orders over PKR {freeShippingThreshold.toLocaleString()}
                   </p>
                 )}
-                <div className="border-t border-gray-200 pt-2 mt-2">
+                <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.5rem", marginTop: "0.5rem" }}>
                   <div className="flex justify-between text-base font-semibold">
-                    <span>Total</span>
-                    <span>{formatPrice(total)}</span>
+                    <span style={{ color: "var(--text-primary)" }}>Total</span>
+                    <span style={{ color: "var(--text-primary)" }}>{formatPrice(total)}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-white rounded-lg border border-gray-200">
-                <p className="text-sm font-medium text-gray-700">Payment Method</p>
-                <p className="text-sm text-gray-600">Cash on Delivery (COD)</p>
+              <div
+                className="mt-4 p-3 rounded-lg"
+                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+              >
+                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Payment Method</p>
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Cash on Delivery (COD)</p>
               </div>
 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full mt-6 bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold text-center hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn btn-primary btn-full mt-6"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
@@ -445,10 +446,7 @@ export default function CheckoutPage() {
                 )}
               </button>
 
-              <Link
-                href="/cart"
-                className="block w-full mt-3 text-center text-gray-600 hover:text-gray-900 text-sm py-2"
-              >
+              <Link href="/cart" className="btn btn-ghost btn-full mt-3">
                 Back to Cart
               </Link>
             </div>

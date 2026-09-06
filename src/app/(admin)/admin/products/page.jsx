@@ -136,14 +136,12 @@ export default function ProductsPage() {
 
   const statusBadge = (productStatus) => {
     const styles = {
-      ACTIVE: "bg-green-100 text-green-800",
-      DRAFT: "bg-yellow-100 text-yellow-800",
-      ARCHIVED: "bg-gray-100 text-gray-800",
+      ACTIVE: "badge badge-success",
+      DRAFT: "badge badge-warning",
+      ARCHIVED: "badge badge-neutral",
     };
     return (
-      <span
-        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${styles[productStatus] || styles.DRAFT}`}
-      >
+      <span className={styles[productStatus] || "badge badge-neutral"}>
         {productStatus}
       </span>
     );
@@ -153,32 +151,32 @@ export default function ProductsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Products Management</h1>
-          <p className="mt-1 text-sm text-gray-500">{total} products total</p>
+          <h1 className="heading-lg">Products Management</h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>{total} products total</p>
         </div>
         <Link href="/admin/products/add">
           <Button>Add Product</Button>
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+      <div className="card p-4 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <label className="label">Search</label>
             <input
               type="text"
               placeholder="Search by name or slug..."
               onChange={handleSearchChange}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-1"
+              className="input"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label className="label">Category</label>
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-1 bg-white"
+              className="input"
             >
               <option value="">All Categories</option>
               {categories.map((cat) => (
@@ -190,11 +188,11 @@ export default function ProductsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="label">Status</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-1 bg-white"
+              className="input"
             >
               <option value="">All Status</option>
               <option value="ACTIVE">Active</option>
@@ -204,11 +202,11 @@ export default function ProductsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+            <label className="label">Gender</label>
             <select
               value={gender}
               onChange={(e) => setGender(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-1 bg-white"
+              className="input"
             >
               <option value="">All Genders</option>
               <option value="MEN">Men</option>
@@ -219,20 +217,21 @@ export default function ProductsPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+        <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'var(--danger-soft)', color: 'var(--danger)', border: '1px solid var(--danger)' }}>
           {error}
         </div>
       )}
 
       {isLoading ? (
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-500">Loading products...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderColor: 'var(--brand)', borderTopColor: 'transparent' }}></div>
+          <p className="mt-4" style={{ color: 'var(--text-muted)' }}>Loading products...</p>
         </div>
       ) : products.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+        <div className="text-center py-12 card">
           <svg
-            className="w-12 h-12 text-gray-400 mx-auto mb-4"
+            className="w-12 h-12 mx-auto mb-4"
+            style={{ color: 'var(--text-muted)' }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -244,46 +243,46 @@ export default function ProductsPage() {
               d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
             />
           </svg>
-          <p className="text-gray-500 mb-4">No products found</p>
+          <p className="mb-4" style={{ color: 'var(--text-muted)' }}>No products found</p>
           <Link href="/admin/products/add">
             <Button size="sm">Add your first product</Button>
           </Link>
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+              <table className="w-full table">
+                <thead>
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th>
                       Image
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th>
                       Name
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th>
                       Category
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th>
                       Price
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th>
                       Stock
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th>
                       Status
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th style={{ textAlign: 'right' }}>
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody>
                   {products.map((product) => (
                     <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                      <td>
+                        <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center" style={{ background: 'var(--surface-soft)' }}>
                           {product.images && product.images.length > 0 ? (
                             <img
                               src={getCloudinaryThumb(product.images[0].imageUrl)}
@@ -292,7 +291,8 @@ export default function ProductsPage() {
                             />
                           ) : (
                             <svg
-                              className="w-6 h-6 text-gray-400"
+                              className="w-6 h-6"
+                              style={{ color: 'var(--text-muted)' }}
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -307,65 +307,67 @@ export default function ProductsPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                        <div className="text-xs text-gray-500">{product.slug}</div>
+                      <td>
+                        <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{product.name}</div>
+                        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{product.slug}</div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{product.category?.name}</div>
+                      <td>
+                        <div style={{ color: 'var(--text-primary)' }}>{product.category?.name}</div>
                         <span
                           className={`inline-flex px-1.5 py-0.5 text-[10px] font-semibold rounded ${
                             product.category?.gender === "MEN"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-pink-100 text-pink-700"
+                              ? "badge badge-brand"
+                              : "badge badge-neutral"
                           }`}
                         >
                           {product.category?.gender}
                         </span>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td>
                         {product.salePrice ? (
                           <div>
-                            <span className="text-sm font-medium text-red-600">
+                            <span className="font-medium" style={{ color: 'var(--danger)' }}>
                               {formatPrice(product.salePrice)}
                             </span>
-                            <span className="text-xs text-gray-500 line-through ml-1">
+                            <span className="text-xs line-through ml-1" style={{ color: 'var(--text-muted)' }}>
                               {formatPrice(product.regularPrice)}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
                             {formatPrice(product.regularPrice)}
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td>
                         <span
-                          className={`text-sm font-medium ${
-                            getTotalStock(product.variants) === 0
-                              ? "text-red-600"
+                          className="font-medium"
+                          style={{
+                            color: getTotalStock(product.variants) === 0
+                              ? 'var(--danger)'
                               : getTotalStock(product.variants) < 10
-                                ? "text-yellow-600"
-                                : "text-gray-900"
-                          }`}
+                                ? 'var(--warning)'
+                                : 'var(--text-primary)'
+                          }}
                         >
                           {getTotalStock(product.variants)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      <td>
                         {statusBadge(product.status)}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
+                      <td style={{ textAlign: 'right' }}>
                         <div className="flex items-center justify-end gap-2">
                           <Link
                             href={`/admin/products/${product.id}/edit`}
-                            className="text-blue-600 hover:text-blue-800"
+                            className="link"
                           >
                             Edit
                           </Link>
                           <button
                             onClick={() => handleDelete(product.id, product.name)}
-                            className="text-red-600 hover:text-red-800"
+                            className="link"
+                            style={{ color: 'var(--danger)' }}
                           >
                             Delete
                           </button>
@@ -380,7 +382,7 @@ export default function ProductsPage() {
 
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 Page {page} of {totalPages}
               </p>
               <div className="flex items-center gap-2">

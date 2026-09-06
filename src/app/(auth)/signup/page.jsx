@@ -123,21 +123,21 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ background: 'var(--surface-soft)' }}>
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-2xl font-bold text-center text-gray-900 mb-6">
+        <div className="card p-8">
+          <h1 className="heading-lg text-center mb-6">
             Create Your Account
           </h1>
 
           {serverError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+            <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'var(--danger-soft)', color: 'var(--danger)', border: '1px solid var(--danger)' }}>
               {serverError}
             </div>
           )}
 
           {successMessage && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-600 text-sm">
+            <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'var(--success-soft)', color: 'var(--success)', border: '1px solid var(--success)' }}>
               {successMessage}
             </div>
           )}
@@ -219,18 +219,18 @@ export default function SignupPage() {
             <Button
               type="submit"
               isLoading={isLoading}
-              className="w-full"
+              className="btn-full"
               size="lg"
             >
               Create Account
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-600">
+          <p className="mt-6 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-blue-600 hover:text-blue-500 font-medium"
+              className="link"
             >
               Login
             </Link>

@@ -11,51 +11,43 @@ export default function EditCategoryPage() {
   const params = useParams();
   const { id } = params;
 
-  const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
-    gender: "MEN",
-    parentId: "",
-    status: "ACTIVE",
-    imageUrl: "",
-  });
+  const [category, setCategory] = useState(null);
   const [parentCategories, setParentCategories] = useState([]);
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [fetchError, setFetchError] = useState("");
 
   useEffect(() => {
+    if (!id) return;
+
     const fetchData = async () => {
       try {
+        setIsFetching(true);
+        setFetchError("");
+
         const [categoryRes, categoriesRes] = await Promise.all([
           fetch(`/api/admin/categories/${id}`),
           fetch("/api/admin/categories"),
         ]);
 
         if (!categoryRes.ok) {
-          throw new Error("Category not found");
+          const errData = await categoryRes.json().catch(() => ({}));
+          throw new Error(errData.error || "Category not found");
         }
 
         const categoryData = await categoryRes.json();
-        const categoriesData = await categoriesRes.json();
-
-        setFormData({
-          name: categoryData.category.name,
-          slug: categoryData.category.slug,
-          gender: categoryData.category.gender,
-          parentId: categoryData.category.parentId || "",
-          status: categoryData.category.status,
-          imageUrl: categoryData.category.imageUrl || "",
-        });
+        setCategory(categoryData.category);
 
         if (categoriesRes.ok) {
+          const categoriesData = await categoriesRes.json();
           setParentCategories(
             categoriesData.categories.filter((cat) => cat.id !== id)
           );
         }
       } catch (err) {
-        setServerError(err.message);
+        setFetchError(err.message);
       } finally {
         setIsFetching(false);
       }
@@ -66,7 +58,7 @@ export default function EditCategoryPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setCategory((prev) => (prev ? { ...prev, [name]: value } : prev));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -78,11 +70,11 @@ export default function EditCategoryPage() {
   const validate = () => {
     const newErrors = {};
 
-    if (!formData.name || formData.name.length < 2) {
+    if (!category?.name || category.name.length < 2) {
       newErrors.name = "Name must be at least 2 characters";
     }
 
-    if (!formData.gender) {
+    if (!category?.gender) {
       newErrors.gender = "Gender is required";
     }
 
@@ -103,12 +95,12 @@ export default function EditCategoryPage() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: formData.name,
-          slug: formData.slug || undefined,
-          gender: formData.gender,
-          parentId: formData.parentId || null,
-          status: formData.status,
-          imageUrl: formData.imageUrl || null,
+          name: category.name,
+          slug: category.slug || undefined,
+          gender: category.gender,
+          parentId: category.parentId || null,
+          status: category.status,
+          imageUrl: category.imageUrl || null,
         }),
       });
 
@@ -128,8 +120,62 @@ export default function EditCategoryPage() {
 
   if (isFetching) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <div className="max-w-2xl">
+        <div className="mb-6">
+          <Link
+            href="/admin/categories"
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            &larr; Back to Categories
+          </Link>
+        </div>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="max-w-2xl">
+        <div className="mb-6">
+          <Link
+            href="/admin/categories"
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            &larr; Back to Categories
+          </Link>
+        </div>
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+          {fetchError}
+        </div>
+        <div className="mt-4">
+          <Link
+            href="/admin/categories"
+            className="text-sm text-blue-600 hover:text-blue-800"
+          >
+            Return to Categories
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!category) {
+    return (
+      <div className="max-w-2xl">
+        <div className="mb-6">
+          <Link
+            href="/admin/categories"
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            &larr; Back to Categories
+          </Link>
+        </div>
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700 text-sm">
+          Category not found.
+        </div>
       </div>
     );
   }
@@ -161,7 +207,7 @@ export default function EditCategoryPage() {
           label="Name"
           type="text"
           name="name"
-          value={formData.name}
+          value={category.name || ""}
           onChange={handleChange}
           placeholder="e.g., Sneakers"
           error={errors.name}
@@ -173,7 +219,7 @@ export default function EditCategoryPage() {
           label="Slug (optional)"
           type="text"
           name="slug"
-          value={formData.slug}
+          value={category.slug || ""}
           onChange={handleChange}
           placeholder="auto-generated from name"
           error={errors.slug}
@@ -186,7 +232,7 @@ export default function EditCategoryPage() {
           </label>
           <select
             name="gender"
-            value={formData.gender}
+            value={category.gender || "MEN"}
             onChange={handleChange}
             disabled={isLoading}
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-1 bg-white"
@@ -205,7 +251,7 @@ export default function EditCategoryPage() {
           </label>
           <select
             name="parentId"
-            value={formData.parentId}
+            value={category.parentId || ""}
             onChange={handleChange}
             disabled={isLoading}
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-1 bg-white"
@@ -225,7 +271,7 @@ export default function EditCategoryPage() {
           </label>
           <select
             name="status"
-            value={formData.status}
+            value={category.status || "ACTIVE"}
             onChange={handleChange}
             disabled={isLoading}
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-1 bg-white"
@@ -239,7 +285,7 @@ export default function EditCategoryPage() {
           label="Image URL (optional)"
           type="text"
           name="imageUrl"
-          value={formData.imageUrl}
+          value={category.imageUrl || ""}
           onChange={handleChange}
           placeholder="https://..."
           error={errors.imageUrl}

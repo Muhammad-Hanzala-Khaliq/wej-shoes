@@ -110,16 +110,15 @@ export async function getCollectionProducts(options = {}) {
       where,
       include: {
         images: {
-          where: { isPrimary: true },
-          take: 1,
-          select: { id: true, imageUrl: true },
+          orderBy: { sortOrder: "asc" },
+          select: { id: true, imageUrl: true, isPrimary: true },
         },
         category: {
           select: { id: true, name: true, slug: true, gender: true },
         },
         variants: {
           where: { deletedAt: null },
-          select: { color: true, size: true, stockQuantity: true },
+          select: { id: true, color: true, size: true, stockQuantity: true },
         },
       },
       orderBy,

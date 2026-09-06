@@ -1,6 +1,7 @@
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 import CartProvider from "@/features/cart/CartProvider";
+import { SettingsProvider } from "@/features/cms/settings-context";
 import { auth } from "@/auth";
 
 export const metadata = {
@@ -15,7 +16,9 @@ export default async function RootLayout({ children }) {
     <html lang="en">
       <body>
         <SessionProvider session={session}>
-          <CartProvider>{children}</CartProvider>
+          <CartProvider>
+            <SettingsProvider>{children}</SettingsProvider>
+          </CartProvider>
         </SessionProvider>
       </body>
     </html>
