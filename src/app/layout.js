@@ -1,6 +1,7 @@
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
 import CartProvider from "@/features/cart/CartProvider";
+import CartToast from "@/components/storefront/CartToast";
 import { SettingsProvider } from "@/features/cms/settings-context";
 import { auth } from "@/auth";
 
@@ -17,6 +18,7 @@ export default async function RootLayout({ children }) {
       <body>
         <SessionProvider session={session}>
           <CartProvider>
+            <CartToast />
             <SettingsProvider>{children}</SettingsProvider>
           </CartProvider>
         </SessionProvider>

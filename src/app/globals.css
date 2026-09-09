@@ -53,8 +53,10 @@
 
 /* ════════════════════════════════════════════════════════
    BASE
-   ════════════════════════════════════════════════════════ */
-html { scroll-behavior: smooth; }
+   ════════════════════════════════════════════════════════ */::-webkit-scrollbar {
+  display: none;
+}
+html { scroll-behavior: smooth; scrollbar-width: none; }
 
 body {
   background: var(--bg);

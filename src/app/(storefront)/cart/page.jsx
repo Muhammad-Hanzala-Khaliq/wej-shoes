@@ -12,18 +12,19 @@ function getOptimizedUrl(url, width) {
 
 export default function CartPage() {
   const { cart, isLoading, updateQuantity, removeItem } = useCart();
-  const [updatingId, setUpdatingId] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
 
-  const handleQuantityChange = async (itemId, newQty) => {
+  const handleQuantityChange = (itemId, newQty) => {
     if (newQty < 1) return;
-    setUpdatingId(itemId);
-    await updateQuantity(itemId, newQty);
-    setUpdatingId(null);
+    updateQuantity(itemId, newQty);
   };
 
-  const handleRemove = async (itemId, productName) => {
-    if (!confirm(`Remove "${productName}" from cart?`)) return;
-    await removeItem(itemId);
+  const handleRemove = (itemId) => {
+    setRemovingId(itemId);
+    setTimeout(() => {
+      removeItem(itemId);
+      setRemovingId(null);
+    }, 300);
   };
 
   if (isLoading) {
@@ -87,113 +88,112 @@ export default function CartPage() {
         <div className="lg:col-span-2 space-y-4">
           {cart.items.map((item) => {
             const { product } = item;
-            const isUpdating = updatingId === item.id;
+            const isRemoving = removingId === item.id;
 
             return (
-              <div key={item.id} className="card p-4 sm:p-6 flex gap-4">
-                <Link
-                  href={`/product/${product.slug}`}
-                  className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden"
-                  style={{ background: "var(--surface-soft)" }}
-                >
-                  {product.image ? (
-                    <img
-                      src={getOptimizedUrl(product.image, 200)}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center" style={{ color: "var(--text-muted)" }}>
-                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                </Link>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="min-w-0">
-                      <Link
-                        href={`/product/${product.slug}`}
-                        className="font-semibold link line-clamp-1"
-                        style={{ color: "var(--text-primary)" }}
-                      >
-                        {product.name}
-                      </Link>
-                      <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                        Color: {item.variant.color}
-                        {item.variant.size && <> | Size: {item.variant.size}</>}
-                      </p>
-                      {item.variant.sku && (
-                        <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
-                          SKU: {item.variant.sku}
-                        </p>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleRemove(item.id, product.name)}
-                      className="p-1 flex-shrink-0 transition-colors"
-                      style={{ color: "var(--text-muted)" }}
-                      onMouseEnter={(e) => e.currentTarget.style.color = "var(--danger)"}
-                      onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-muted)"}
-                      aria-label="Remove item"
+              <div
+                key={item.id}
+                className={`grid transition-all duration-300 ease-in-out ${isRemoving ? "grid-rows-[0fr] opacity-0 translate-x-6" : "grid-rows-[1fr] opacity-100"}`}
+              >
+                <div className="overflow-hidden">
+                  <div className="card p-4 sm:p-6 flex gap-4">
+                    <Link
+                      href={`/product/${product.slug}`}
+                      className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden"
+                      style={{ background: "var(--surface-soft)" }}
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="mt-3 flex items-center justify-between">
-                    <div
-                      className="flex items-center rounded-lg"
-                      style={{ border: "1px solid var(--border)" }}
-                    >
-                      <button
-                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                        disabled={item.quantity <= 1 || isUpdating}
-                        className="px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        style={{ color: "var(--text-secondary)" }}
-                        onMouseEnter={(e) => !e.target.disabled && (e.target.style.background = "var(--surface-soft)")}
-                        onMouseLeave={(e) => e.target.style.background = "transparent"}
-                      >
-                        -
-                      </button>
-                      <span
-                        className="px-3 py-1.5 text-sm font-medium min-w-[36px] text-center"
-                        style={{ borderInline: "1px solid var(--border)", color: "var(--text-primary)" }}
-                      >
-                        {isUpdating ? (
-                          <svg className="animate-spin h-4 w-4 mx-auto" style={{ color: "var(--text-muted)" }} viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      {product.image ? (
+                        <img
+                          src={getOptimizedUrl(product.image, 200)}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center" style={{ color: "var(--text-muted)" }}>
+                          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                        ) : (
-                          item.quantity
-                        )}
-                      </span>
-                      <button
-                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                        disabled={isUpdating}
-                        className="px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        style={{ color: "var(--text-secondary)" }}
-                        onMouseEnter={(e) => !e.target.disabled && (e.target.style.background = "var(--surface-soft)")}
-                        onMouseLeave={(e) => e.target.style.background = "transparent"}
-                      >
-                        +
-                      </button>
-                    </div>
-
-                    <div className="text-right">
-                      <p className="font-semibold" style={{ color: "var(--text-primary)" }}>
-                        {formatPrice(product.salePrice ? product.salePrice * item.quantity : product.regularPrice * item.quantity)}
-                      </p>
-                      {product.salePrice && (
-                        <p className="text-xs line-through" style={{ color: "var(--text-muted)" }}>
-                          {formatPrice(product.regularPrice * item.quantity)}
-                        </p>
+                        </div>
                       )}
+                    </Link>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0">
+                          <Link
+                            href={`/product/${product.slug}`}
+                            className="font-semibold link line-clamp-1"
+                            style={{ color: "var(--text-primary)" }}
+                          >
+                            {product.name}
+                          </Link>
+                          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
+                            Color: {item.variant.color}
+                            {item.variant.size && <> | Size: {item.variant.size}</>}
+                          </p>
+                          {item.variant.sku && (
+                            <p className="text-xs mt-0.5" style={{ color: "var(--text-muted)" }}>
+                              SKU: {item.variant.sku}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRemove(item.id)}
+                          className="p-1 flex-shrink-0 transition-colors"
+                          style={{ color: "var(--text-muted)" }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = "var(--danger)"}
+                          onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-muted)"}
+                          aria-label="Remove item"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <div
+                          className="flex items-center rounded-lg"
+                          style={{ border: "1px solid var(--border)" }}
+                        >
+                          <button
+                            onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                            disabled={item.quantity <= 1}
+                            className="px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            style={{ color: "var(--text-secondary)" }}
+                            onMouseEnter={(e) => !e.target.disabled && (e.target.style.background = "var(--surface-soft)")}
+                            onMouseLeave={(e) => e.target.style.background = "transparent"}
+                          >
+                            -
+                          </button>
+                          <span
+                            className="px-3 py-1.5 text-sm font-medium min-w-[36px] text-center"
+                            style={{ borderInline: "1px solid var(--border)", color: "var(--text-primary)" }}
+                          >
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                            className="px-3 py-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            style={{ color: "var(--text-secondary)" }}
+                            onMouseEnter={(e) => !e.target.disabled && (e.target.style.background = "var(--surface-soft)")}
+                            onMouseLeave={(e) => e.target.style.background = "transparent"}
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <div className="text-right">
+                          <p className="font-semibold" style={{ color: "var(--text-primary)" }}>
+                            {formatPrice(item.linePrice)}
+                          </p>
+                          {product.salePrice && (
+                            <p className="text-xs line-through" style={{ color: "var(--text-muted)" }}>
+                              {formatPrice(product.regularPrice * item.quantity)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

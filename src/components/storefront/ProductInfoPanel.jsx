@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import VariantSelector from "@/components/storefront/VariantSelector";
 import AddToCartButton from "@/components/storefront/AddToCartButton";
+import { addRecentlyViewed } from "@/lib/recently-viewed";
 
 function formatPrice(price) {
   return `PKR ${Number(price).toLocaleString("en-PK")}`;
@@ -12,6 +13,16 @@ export default function ProductInfoPanel({ product, variants }) {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [wishlist, setWishlist] = useState(false);
   const [openAccordion, setOpenAccordion] = useState(null);
+
+  useEffect(() => {
+    addRecentlyViewed({
+      slug: product.slug,
+      name: product.name,
+      imageUrl: product.images?.[0]?.imageUrl,
+      regularPrice: Number(product.regularPrice),
+      salePrice: product.salePrice ? Number(product.salePrice) : null,
+    });
+  }, [product.slug]);
 
   const regularPrice = Number(product.regularPrice);
   const salePrice = product.salePrice ? Number(product.salePrice) : null;

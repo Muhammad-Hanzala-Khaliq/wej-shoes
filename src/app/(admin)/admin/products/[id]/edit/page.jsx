@@ -7,6 +7,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import ImageUploader from "@/components/admin/ImageUploader";
 import VariantManager from "@/components/admin/VariantManager";
+import { SIZE_RANGES } from "@/lib/constants";
 
 function generateSlug(text) {
   return text
@@ -402,6 +403,11 @@ export default function EditProductPage() {
             variants={variants}
             onChange={setVariants}
             productSlug={formData.slug}
+            sizeRange={
+              formData.categoryId
+                ? (SIZE_RANGES[categories.find((c) => c.id === formData.categoryId)?.gender] || null)?.map(String)
+                : null
+            }
           />
           {Object.keys(errors)
             .filter((k) => k.startsWith("variant_"))

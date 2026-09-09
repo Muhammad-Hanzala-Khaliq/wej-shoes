@@ -5,6 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import ImageUpload from "@/components/admin/ImageUpload";
+import { GENDERS } from "@/lib/constants";
 
 export default function EditCategoryPage() {
   const router = useRouter();
@@ -237,8 +239,9 @@ export default function EditCategoryPage() {
             disabled={isLoading}
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-1 bg-white"
           >
-            <option value="MEN">Men</option>
-            <option value="WOMEN">Women</option>
+            {GENDERS.map((g) => (
+              <option key={g.value} value={g.value}>{g.label}</option>
+            ))}
           </select>
           {errors.gender && (
             <p className="text-sm text-red-600">{errors.gender}</p>
@@ -281,15 +284,10 @@ export default function EditCategoryPage() {
           </select>
         </div>
 
-        <Input
-          label="Image URL (optional)"
-          type="text"
-          name="imageUrl"
+        <ImageUpload
           value={category.imageUrl || ""}
-          onChange={handleChange}
-          placeholder="https://..."
-          error={errors.imageUrl}
-          disabled={isLoading}
+          onChange={(url) => setCategory((prev) => (prev ? { ...prev, imageUrl: url } : prev))}
+          folder="categories"
         />
 
         <div className="flex items-center gap-4 pt-4">

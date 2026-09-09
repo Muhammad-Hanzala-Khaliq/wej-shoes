@@ -16,12 +16,16 @@ function getSessionId(cookieStore) {
  */
 export async function PUT(request, { params }) {
   try {
+    const { itemId } = await params;
+
+    if (itemId.startsWith("temp-")) {
+      return NextResponse.json({ message: "noop" });
+    }
+
     const cookieStore = await cookies();
     const sessionId = getSessionId(cookieStore);
     const session = await auth();
     const userId = session?.user?.id || null;
-
-    const { itemId } = await params;
     const body = await request.json();
     const { quantity } = body;
 
@@ -67,12 +71,16 @@ export async function PUT(request, { params }) {
  */
 export async function DELETE(request, { params }) {
   try {
+    const { itemId } = await params;
+
+    if (itemId.startsWith("temp-")) {
+      return NextResponse.json({ message: "noop" });
+    }
+
     const cookieStore = await cookies();
     const sessionId = getSessionId(cookieStore);
     const session = await auth();
     const userId = session?.user?.id || null;
-
-    const { itemId } = await params;
 
     const cart = await removeCartItem({ userId, sessionId, itemId });
 

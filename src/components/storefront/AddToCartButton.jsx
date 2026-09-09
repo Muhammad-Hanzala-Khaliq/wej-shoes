@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useCart } from "@/features/cart/CartProvider";
+import { flyToCart } from "@/lib/fly-to-cart";
 
 export default function AddToCartButton({ variant, product, disabled }) {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [quantityError, setQuantityError] = useState("");
   const { addToCart } = useCart();
+  const btnRef = useRef(null);
 
   const maxStock = variant ? variant.stockQuantity : 0;
   const isDisabled = disabled || !variant || variant.stockQuantity === 0;
@@ -31,17 +33,29 @@ export default function AddToCartButton({ variant, product, disabled }) {
 
     setQuantityError("");
 
-    const result = await addToCart(variant.id, quantity);
+    const hasSale = product?.salePrice && Number(product.salePrice) < Number(product.regularPrice);
+    const effectivePrice = hasSale ? Number(product.salePrice) : Number(product.regularPrice);
 
-    if (result.success) {
-      setAdded(true);
-      setTimeout(() => {
-        setAdded(false);
-        setQuantity(1);
-      }, 2000);
-    } else {
-      setQuantityError(result.error || "Failed to add to cart");
-    }
+    // Fire all UI updates immediately — don't await
+    flyToCart({ imageUrl: product.images?.[0]?.imageUrl, sourceEl: btnRef.current });
+    addToCart(variant.id, quantity, {
+      productId: product.id,
+      productName: product.name,
+      slug: product.slug,
+      image: product.images?.[0]?.imageUrl,
+      color: variant.color,
+      size: variant.size,
+      sku: variant.sku,
+      stockQuantity: variant.stockQuantity,
+      effectivePrice,
+      regularPrice: product.regularPrice,
+      salePrice: product.salePrice,
+    });
+    setAdded(true);
+    setTimeout(() => {
+      setAdded(false);
+      setQuantity(1);
+    }, 2000);
   };
 
   return (
@@ -86,6 +100,7 @@ export default function AddToCartButton({ variant, product, disabled }) {
 
           {/* Add to cart - black pill */}
           <button
+            ref={btnRef}
             onClick={handleAddToCart}
             disabled={isDisabled}
             className="flex-1 h-10 rounded-full font-semibold text-sm transition-colors"

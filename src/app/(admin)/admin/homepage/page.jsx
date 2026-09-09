@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 const SECTION_TYPES = [
   { value: "HERO", label: "Hero Banner" },
@@ -358,13 +359,16 @@ export default function AdminHomepagePage() {
                 placeholder="Up to 50% off"
               />
 
-              <Input
-                label="Image URL"
-                name="imageUrl"
-                value={form.imageUrl}
-                onChange={handleChange}
-                placeholder="https://..."
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Image
+                </label>
+                <ImageUpload
+                  value={form.imageUrl}
+                  onChange={(url) => setForm((prev) => ({ ...prev, imageUrl: url }))}
+                  folder="homepage"
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <Input

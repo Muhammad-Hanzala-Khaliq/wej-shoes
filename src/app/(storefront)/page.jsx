@@ -18,6 +18,11 @@ function serializeDecimal(data) {
   );
 }
 
+function heroUrl(url, width) {
+  if (!url || !url.includes("cloudinary")) return url;
+  return url.replace("/upload/", `/upload/w_${width},q_auto,f_auto/`);
+}
+
 async function getHeroContent() {
   const hero = await prisma.homepageContent.findFirst({
     where: { sectionType: "HERO", isActive: true },
@@ -142,18 +147,17 @@ export default async function HomePage() {
   return (
     <div>
       {/* SECTION 1: HERO */}
-      <section className="relative w-full" style={{ height: "60vh" }}>
-        <style>{`
-          @media (min-width: 768px) {
-            .hero-section { height: 80vh !important; }
-          }
-        `}</style>
-        <div className="hero-section absolute inset-0">
+      <section className="relative w-full h-[calc(100svh-4rem)] min-h-[480px] overflow-hidden">
+        <div className="absolute inset-0">
           {heroImageUrl ? (
             <img
-              src={heroImageUrl}
+              src={heroUrl(heroImageUrl, 1920)}
+              srcSet={[640, 1024, 1600, 2000].map((w) => `${heroUrl(heroImageUrl, w)} ${w}w`).join(", ")}
+              sizes="100vw"
               alt={heroTitle}
-              className="w-full h-full object-cover object-center"
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              loading="eager"
+              fetchPriority="high"
             />
           ) : (
             <div

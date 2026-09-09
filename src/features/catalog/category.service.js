@@ -43,6 +43,30 @@ export async function getCategories(options = {}) {
 }
 
 /**
+ * Get parent categories with their active children (for navigation menu)
+ * @returns {Promise<Array>} Parent categories with children
+ */
+export async function getMenuCategories() {
+  const parents = await prisma.category.findMany({
+    where: {
+      parentId: null,
+      status: "ACTIVE",
+      deletedAt: null,
+    },
+    include: {
+      children: {
+        where: { status: "ACTIVE", deletedAt: null },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, slug: true, gender: true },
+      },
+    },
+    orderBy: [{ gender: "asc" }, { name: "asc" }],
+  });
+
+  return parents;
+}
+
+/**
  * Get single category by slug
  * @param {string} slug
  * @returns {Promise<Object|null>} Category or null
@@ -90,7 +114,7 @@ export async function getCategoryById(id) {
  * Create new category
  * @param {Object} data
  * @param {string} data.name - Category name (required)
- * @param {string} data.gender - Gender: MEN or WOMEN (required)
+ * @param {string} data.gender - Gender: MEN, WOMEN, or KIDS (required)
  * @param {string} [data.slug] - Custom slug (auto-generated if empty)
  * @param {string} [data.parentId] - Parent category id
  * @param {string} [data.imageUrl] - Image URL
@@ -104,8 +128,8 @@ export async function createCategory(data) {
     throw new Error("Name and gender are required");
   }
 
-  if (!["MEN", "WOMEN"].includes(gender)) {
-    throw new Error("Gender must be MEN or WOMEN");
+  if (!["MEN", "WOMEN", "KIDS"].includes(gender)) {
+    throw new Error("Gender must be MEN, WOMEN, or KIDS");
   }
 
   const categorySlug = slug || generateSlug(name);
@@ -150,6 +174,10 @@ export async function updateCategory(id, data) {
 
   if (!existing || existing.deletedAt) {
     throw new Error("Category not found");
+  }
+
+  if (gender && !["MEN", "WOMEN", "KIDS"].includes(gender)) {
+    throw new Error("Gender must be MEN, WOMEN, or KIDS");
   }
 
   if (slug && slug !== existing.slug) {

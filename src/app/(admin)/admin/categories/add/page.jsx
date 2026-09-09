@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import ImageUpload from "@/components/admin/ImageUpload";
+import { GENDERS } from "@/lib/constants";
 
 /**
  * Add new category page
@@ -157,8 +159,9 @@ export default function AddCategoryPage() {
             disabled={isLoading}
             className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none focus:ring-1 bg-white"
           >
-            <option value="MEN">Men</option>
-            <option value="WOMEN">Women</option>
+            {GENDERS.map((g) => (
+              <option key={g.value} value={g.value}>{g.label}</option>
+            ))}
           </select>
           {errors.gender && <p className="text-sm text-red-600">{errors.gender}</p>}
         </div>
@@ -197,15 +200,10 @@ export default function AddCategoryPage() {
           </select>
         </div>
 
-        <Input
-          label="Image URL (optional)"
-          type="text"
-          name="imageUrl"
+        <ImageUpload
           value={formData.imageUrl}
-          onChange={handleChange}
-          placeholder="https://..."
-          error={errors.imageUrl}
-          disabled={isLoading}
+          onChange={(url) => setFormData((prev) => ({ ...prev, imageUrl: url }))}
+          folder="categories"
         />
 
         <div className="flex items-center gap-4 pt-4">

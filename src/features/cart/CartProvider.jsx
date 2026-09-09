@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { getSessionId } from "@/lib/utils";
 
 const CartContext = createContext(null);
@@ -13,10 +13,25 @@ export function useCart() {
   return context;
 }
 
+function recompute(items) {
+  return {
+    items,
+    subtotal: items.reduce((sum, item) => sum + item.linePrice, 0),
+    itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+  };
+}
+
 export default function CartProvider({ children }) {
   const [cart, setCart] = useState({ items: [], subtotal: 0, itemCount: 0, cartId: null });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const cartRef = useRef(cart);
+  const pendingAddsRef = useRef({});
+  const intentsRef = useRef({});
+
+  useEffect(() => {
+    cartRef.current = cart;
+  }, [cart]);
 
   useEffect(() => {
     const sessionId = getSessionId();
@@ -52,31 +67,228 @@ export default function CartProvider({ children }) {
     }
   }, []);
 
-  const addToCart = useCallback(async (variantId, quantity = 1) => {
+  const setIntent = useCallback((variantId, patch) => {
+    intentsRef.current[variantId] = {
+      ...(intentsRef.current[variantId] || {}),
+      ...patch,
+    };
+  }, []);
+
+  const takeIntent = useCallback((variantId) => {
+    const intent = intentsRef.current[variantId] || null;
+    delete intentsRef.current[variantId];
+    return intent;
+  }, []);
+
+  const addToCart = useCallback(async (variantId, quantity = 1, snapshot = null) => {
     try {
       setError(null);
 
-      const response = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ variantId, quantity }),
+      // Optimistic update if snapshot provided
+      if (snapshot) {
+        setCart((prev) => {
+          const existing = prev.items.find((item) => item.variantId === variantId);
+          let updatedItems;
+
+          if (existing) {
+            updatedItems = prev.items.map((item) =>
+              item.variantId === variantId
+                ? {
+                    ...item,
+                    quantity: item.quantity + quantity,
+                    effectivePrice: snapshot.effectivePrice,
+                    linePrice: snapshot.effectivePrice * (item.quantity + quantity),
+                  }
+                : item
+            );
+          } else {
+            const tempItem = {
+              id: `temp-${variantId}-${Date.now()}`,
+              variantId,
+              quantity,
+              effectivePrice: snapshot.effectivePrice,
+              linePrice: snapshot.effectivePrice * quantity,
+              variant: {
+                id: variantId,
+                sku: snapshot.sku,
+                color: snapshot.color,
+                size: snapshot.size,
+                stockQuantity: snapshot.stockQuantity,
+              },
+              product: {
+                id: snapshot.productId,
+                name: snapshot.productName,
+                slug: snapshot.slug,
+                regularPrice: snapshot.regularPrice,
+                salePrice: snapshot.salePrice,
+                image: snapshot.image,
+              },
+            };
+            updatedItems = [...prev.items, tempItem];
+          }
+
+          return recompute(updatedItems);
+        });
+      }
+
+      // Create the server promise and store it
+      const p = (async () => {
+        try {
+          const response = await fetch("/api/cart", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ variantId, quantity }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to add to cart");
+          }
+
+          // Consume any queued intent for this variant before setting cart
+          const intent = takeIntent(variantId);
+
+          if (intent && intent.remove) {
+            const realItem = (data.items || []).find((i) => i.variantId === variantId);
+            if (realItem) {
+              setCart(recompute((data.items || []).filter((i) => i.id !== realItem.id)));
+              // Delete on server in background
+              fetch(`/api/cart/${realItem.id}`, { method: "DELETE" })
+                .then((r) => r.json())
+                .then((d) => {
+                  if (d && d.cart) setCart(d.cart);
+                  else if (d && d.items) setCart(recompute(d.items));
+                })
+                .catch(() => refreshCart());
+            } else {
+              setCart(recompute(data.items || []));
+            }
+          } else if (intent && intent.qty != null) {
+            const realItem = (data.items || []).find((i) => i.variantId === variantId);
+            if (realItem) {
+              const updated = {
+                ...realItem,
+                quantity: intent.qty,
+                linePrice: realItem.effectivePrice * intent.qty,
+              };
+              setCart(recompute((data.items || []).map((i) => (i.id === realItem.id ? updated : i))));
+              // Update on server in background
+              fetch(`/api/cart/${realItem.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ quantity: intent.qty }),
+              })
+                .then((r) => r.json())
+                .then((d) => {
+                  if (d && d.items) setCart(recompute(d.items));
+                })
+                .catch(() => refreshCart());
+            } else {
+              setCart(recompute(data.items || []));
+            }
+          } else {
+            setCart(recompute(data.items || []));
+          }
+
+          return { success: true };
+        } catch (err) {
+          takeIntent(variantId);
+          setError(err.message);
+          refreshCart();
+          return { success: false, error: err.message };
+        } finally {
+          delete pendingAddsRef.current[variantId];
+        }
+      })();
+
+      pendingAddsRef.current[variantId] = p;
+      return p;
+    } catch (err) {
+      refreshCart();
+      setError(err.message);
+      return { success: false, error: err.message };
+    }
+  }, [refreshCart, takeIntent]);
+
+  const removeItem = useCallback(async (itemId) => {
+    // Handle temp items: queue intent, optimistic remove locally
+    if (itemId.startsWith("temp-")) {
+      const variantId = itemId.replace(/^temp-[^-]+-/, "");
+      setIntent(variantId, { remove: true, qty: null });
+
+      setCart((prev) => {
+        const updatedItems = prev.items.filter((item) => !item.id.startsWith(`temp-${variantId}-`));
+        return recompute(updatedItems);
+      });
+
+      return { success: true };
+    }
+
+    // Real item: optimistic remove then server fetch
+    const previous = cartRef.current;
+
+    setCart((prev) => {
+      const updatedItems = prev.items.filter((item) => item.id !== itemId);
+      return recompute(updatedItems);
+    });
+
+    try {
+      setError(null);
+
+      const response = await fetch(`/api/cart/${itemId}`, {
+        method: "DELETE",
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to add to cart");
+        throw new Error(data.error || "Failed to remove item");
       }
 
-      setCart(data);
+      setCart(recompute(data.cart?.items || data.items || []));
       return { success: true };
     } catch (err) {
+      setCart(previous);
       setError(err.message);
       return { success: false, error: err.message };
     }
-  }, []);
+  }, [setIntent]);
 
   const updateQuantity = useCallback(async (itemId, quantity) => {
+    if (quantity <= 0) {
+      return removeItem(itemId);
+    }
+
+    // Handle temp items: queue intent, optimistic update locally
+    if (itemId.startsWith("temp-")) {
+      const variantId = itemId.replace(/^temp-[^-]+-/, "");
+      setIntent(variantId, { qty: quantity, remove: false });
+
+      setCart((prev) => {
+        const updatedItems = prev.items.map((item) =>
+          item.variantId === variantId
+            ? { ...item, quantity, linePrice: item.effectivePrice * quantity }
+            : item
+        );
+        return recompute(updatedItems);
+      });
+
+      return { success: true };
+    }
+
+    // Real item: optimistic update then server fetch
+    const previous = cartRef.current;
+
+    setCart((prev) => {
+      const updatedItems = prev.items.map((item) =>
+        item.id === itemId
+          ? { ...item, quantity, linePrice: item.effectivePrice * quantity }
+          : item
+      );
+      return recompute(updatedItems);
+    });
+
     try {
       setError(null);
 
@@ -92,35 +304,14 @@ export default function CartProvider({ children }) {
         throw new Error(data.error || "Failed to update cart");
       }
 
-      setCart(data);
+      setCart(recompute(data.items || []));
       return { success: true };
     } catch (err) {
+      setCart(previous);
       setError(err.message);
       return { success: false, error: err.message };
     }
-  }, []);
-
-  const removeItem = useCallback(async (itemId) => {
-    try {
-      setError(null);
-
-      const response = await fetch(`/api/cart/${itemId}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to remove item");
-      }
-
-      setCart(data.cart);
-      return { success: true };
-    } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
-    }
-  }, []);
+  }, [removeItem, setIntent]);
 
   const clearCart = useCallback(async () => {
     try {

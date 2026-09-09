@@ -5,11 +5,10 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { useSettings } from "@/features/cms/settings-context";
 import CartBadge from "./CartBadge";
+import SearchModal from "./SearchModal";
 
 const navLinks = [
   { label: "Home", href: "/" },
-  { label: "Men", href: "/collections/men" },
-  { label: "Women", href: "/collections/women" },
   { label: "New Arrivals", href: "/collections/new" },
 ];
 
@@ -18,9 +17,37 @@ export default function Header() {
   const { storeName, logoUrl } = useSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [menuData, setMenuData] = useState({ MEN: [], WOMEN: [] });
+  const [openMenu, setOpenMenu] = useState(null);
+  const [expandedGender, setExpandedGender] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const menuTimeoutRef = useRef(null);
 
   const isAdmin = session?.user?.role === "ADMIN";
+
+  useEffect(() => {
+    async function fetchMenu() {
+      try {
+        const res = await fetch("/api/categories");
+        if (res.ok) {
+          const data = await res.json();
+          const structured = { MEN: [], WOMEN: [] };
+          for (const parent of data.categories) {
+            if (parent.gender === "MEN" && parent.children) {
+              structured.MEN.push(...parent.children);
+            } else if (parent.gender === "WOMEN" && parent.children) {
+              structured.WOMEN.push(...parent.children);
+            }
+          }
+          setMenuData(structured);
+        }
+      } catch {
+        // fallback: nav still works with plain links
+      }
+    }
+    fetchMenu();
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -32,10 +59,90 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileMenuOpen]);
+
   const handleLogout = () => {
     setDropdownOpen(false);
     setMobileMenuOpen(false);
     signOut({ callbackUrl: "/" });
+  };
+
+  const handleMenuEnter = (gender) => {
+    clearTimeout(menuTimeoutRef.current);
+    setOpenMenu(gender);
+  };
+
+  const handleMenuLeave = () => {
+    menuTimeoutRef.current = setTimeout(() => setOpenMenu(null), 120);
+  };
+
+  const renderDropdown = (gender, items) => {
+    const label = gender === "MEN" ? "Men" : "Women";
+    const viewAllHref = `/collections/${label.toLowerCase()}`;
+
+    return (
+      <div
+        className="absolute left-0 top-full pt-2 z-50"
+        onMouseEnter={() => handleMenuEnter(gender)}
+        onMouseLeave={handleMenuLeave}
+      >
+        <div
+          className="bg-white shadow-lg rounded-b-lg border-t py-3 min-w-[240px]"
+          style={{ borderColor: "var(--border)" }}
+        >
+          <Link
+            href={viewAllHref}
+            onClick={() => setOpenMenu(null)}
+            className="block px-6 py-2 text-sm font-semibold transition-colors"
+            style={{ color: "var(--text-primary)" }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            View All {label}
+          </Link>
+          <div className="my-1 mx-4" style={{ borderTop: "1px solid var(--border)" }} />
+          {items.length > 0 ? (
+            items.map((item) => (
+              <Link
+                key={item.id}
+                href={`/collections/${item.slug}`}
+                onClick={() => setOpenMenu(null)}
+                className="block px-6 py-2.5 text-sm transition-colors"
+                style={{ color: "var(--text-secondary)" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = "var(--text-primary)";
+                  e.currentTarget.style.background = "var(--surface-soft)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = "var(--text-secondary)";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                {item.name}
+              </Link>
+            ))
+          ) : (
+            <Link
+              href={viewAllHref}
+              onClick={() => setOpenMenu(null)}
+              className="block px-6 py-2.5 text-sm transition-colors"
+              style={{ color: "var(--text-muted)" }}
+              onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+              onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+            >
+              Browse {label}
+            </Link>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -66,18 +173,66 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+
+            {/* Men dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => handleMenuEnter("MEN")}
+              onMouseLeave={handleMenuLeave}
+            >
+              <Link
+                href="/collections/men"
+                className="flex items-center gap-1.5 text-sm font-medium transition-colors"
+                style={{ color: openMenu === "MEN" ? "var(--text-primary)" : "var(--text-secondary)" }}
+              >
+                Men
+                <svg
+                  className={`w-3.5 h-3.5 pointer-events-none transition-transform duration-150 ${openMenu === "MEN" ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </Link>
+              {openMenu === "MEN" && renderDropdown("MEN", menuData.MEN)}
+            </div>
+
+            {/* Women dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => handleMenuEnter("WOMEN")}
+              onMouseLeave={handleMenuLeave}
+            >
+              <Link
+                href="/collections/women"
+                className="flex items-center gap-1.5 text-sm font-medium transition-colors"
+                style={{ color: openMenu === "WOMEN" ? "var(--text-primary)" : "var(--text-secondary)" }}
+              >
+                Women
+                <svg
+                  className={`w-3.5 h-3.5 pointer-events-none transition-transform duration-150 ${openMenu === "WOMEN" ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </Link>
+              {openMenu === "WOMEN" && renderDropdown("WOMEN", menuData.WOMEN)}
+            </div>
           </nav>
 
           <div className="flex items-center gap-4">
-            <Link
-              href="/search"
-              className="p-2 link"
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="p-2"
               style={{ color: "var(--text-secondary)" }}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-            </Link>
+            </button>
 
             <CartBadge />
 
@@ -112,8 +267,8 @@ export default function Header() {
                         onClick={() => setDropdownOpen(false)}
                         className="block px-4 py-2 text-sm"
                         style={{ color: "var(--text-secondary)" }}
-                        onMouseEnter={(e) => e.target.style.background = "var(--surface-soft)"}
-                        onMouseLeave={(e) => e.target.style.background = "transparent"}
+                        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                       >
                         My Account
                       </Link>
@@ -123,8 +278,8 @@ export default function Header() {
                           onClick={() => setDropdownOpen(false)}
                           className="block px-4 py-2 text-sm"
                           style={{ color: "var(--text-secondary)" }}
-                          onMouseEnter={(e) => e.target.style.background = "var(--surface-soft)"}
-                          onMouseLeave={(e) => e.target.style.background = "transparent"}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                         >
                           Admin Panel
                         </Link>
@@ -134,8 +289,8 @@ export default function Header() {
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm"
                         style={{ color: "var(--danger)" }}
-                        onMouseEnter={(e) => e.target.style.background = "var(--surface-soft)"}
-                        onMouseLeave={(e) => e.target.style.background = "transparent"}
+                        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                       >
                         Logout
                       </button>
@@ -175,7 +330,7 @@ export default function Header() {
             onClick={() => setMobileMenuOpen(false)}
           />
           <div
-            className="absolute right-0 top-0 h-full w-72 shadow-xl"
+            className="absolute right-0 top-0 h-full w-72 shadow-xl overflow-y-auto"
             style={{ background: "var(--surface)" }}
           >
             <div
@@ -193,30 +348,159 @@ export default function Header() {
                 </svg>
               </button>
             </div>
-            <nav className="p-4 space-y-2">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block py-2 px-3 rounded-lg"
+            <nav className="p-4 space-y-1">
+              {/* Home */}
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2.5 px-3 rounded-lg"
+                style={{ color: "var(--text-secondary)" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                Home
+              </Link>
+
+              {/* Men accordion */}
+              <div>
+                <button
+                  onClick={() => setExpandedGender(expandedGender === "MEN" ? null : "MEN")}
+                  className="flex items-center justify-between w-full py-2.5 px-3 rounded-lg text-left"
                   style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={(e) => e.target.style.background = "var(--surface-soft)"}
-                  onMouseLeave={(e) => e.target.style.background = "transparent"}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                 >
-                  {link.label}
-                </Link>
-              ))}
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.5rem", marginTop: "0.5rem" }}>
+                  <span>Men</span>
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-150 ${expandedGender === "MEN" ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {expandedGender === "MEN" && (
+                  <div className="pl-4 pb-1">
+                    <Link
+                      href="/collections/men"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block py-2 pl-3 pr-3 text-sm font-semibold rounded-lg"
+                      style={{ color: "var(--text-primary)" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    >
+                      View All Men
+                    </Link>
+                    {menuData.MEN.length > 0 ? (
+                      menuData.MEN.map((item) => (
+                        <Link
+                          key={item.id}
+                          href={`/collections/${item.slug}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block py-2 pl-3 pr-3 text-sm rounded-lg"
+                          style={{ color: "var(--text-secondary)" }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                        >
+                          {item.name}
+                        </Link>
+                      ))
+                    ) : (
+                      <Link
+                        href="/collections/men"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block py-2 pl-3 pr-3 text-sm rounded-lg"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Browse Men
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Women accordion */}
+              <div>
+                <button
+                  onClick={() => setExpandedGender(expandedGender === "WOMEN" ? null : "WOMEN")}
+                  className="flex items-center justify-between w-full py-2.5 px-3 rounded-lg text-left"
+                  style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                >
+                  <span>Women</span>
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-150 ${expandedGender === "WOMEN" ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {expandedGender === "WOMEN" && (
+                  <div className="pl-4 pb-1">
+                    <Link
+                      href="/collections/women"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block py-2 pl-3 pr-3 text-sm font-semibold rounded-lg"
+                      style={{ color: "var(--text-primary)" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    >
+                      View All Women
+                    </Link>
+                    {menuData.WOMEN.length > 0 ? (
+                      menuData.WOMEN.map((item) => (
+                        <Link
+                          key={item.id}
+                          href={`/collections/${item.slug}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block py-2 pl-3 pr-3 text-sm rounded-lg"
+                          style={{ color: "var(--text-secondary)" }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                        >
+                          {item.name}
+                        </Link>
+                      ))
+                    ) : (
+                      <Link
+                        href="/collections/women"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block py-2 pl-3 pr-3 text-sm rounded-lg"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Browse Women
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* New Arrivals */}
+              <Link
+                href="/collections/new"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block py-2.5 px-3 rounded-lg"
+                style={{ color: "var(--text-secondary)" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                New Arrivals
+              </Link>
+
+              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.75rem", marginTop: "0.5rem" }}>
                 {session ? (
                   <>
                     <Link
                       href="/account"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="block py-2 px-3 rounded-lg"
+                      className="block py-2.5 px-3 rounded-lg"
                       style={{ color: "var(--text-secondary)" }}
-                      onMouseEnter={(e) => e.target.style.background = "var(--surface-soft)"}
-                      onMouseLeave={(e) => e.target.style.background = "transparent"}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                     >
                       My Account
                     </Link>
@@ -224,20 +508,20 @@ export default function Header() {
                       <Link
                         href="/admin/dashboard"
                         onClick={() => setMobileMenuOpen(false)}
-                        className="block py-2 px-3 rounded-lg"
+                        className="block py-2.5 px-3 rounded-lg"
                         style={{ color: "var(--text-secondary)" }}
-                        onMouseEnter={(e) => e.target.style.background = "var(--surface-soft)"}
-                        onMouseLeave={(e) => e.target.style.background = "transparent"}
+                        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                       >
                         Admin Panel
                       </Link>
                     )}
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left py-2 px-3 rounded-lg"
+                      className="block w-full text-left py-2.5 px-3 rounded-lg"
                       style={{ color: "var(--danger)" }}
-                      onMouseEnter={(e) => e.target.style.background = "var(--surface-soft)"}
-                      onMouseLeave={(e) => e.target.style.background = "transparent"}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                     >
                       Logout
                     </button>
@@ -246,10 +530,10 @@ export default function Header() {
                   <Link
                     href="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block py-2 px-3 rounded-lg"
+                    className="block py-2.5 px-3 rounded-lg"
                     style={{ color: "var(--text-secondary)" }}
-                    onMouseEnter={(e) => e.target.style.background = "var(--surface-soft)"}
-                    onMouseLeave={(e) => e.target.style.background = "transparent"}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                   >
                     Login
                   </Link>
@@ -259,6 +543,7 @@ export default function Header() {
           </div>
         </div>
       )}
+      <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   );
 }

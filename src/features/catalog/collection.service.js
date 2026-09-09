@@ -12,6 +12,7 @@ import prisma from "@/lib/db";
  * @param {number} [options.maxPrice] - Maximum price
  * @param {string[]} [options.colors] - Filter by colors
  * @param {string[]} [options.sizes] - Filter by sizes
+ * @param {boolean} [options.inStock] - Only show in-stock products
  * @returns {Promise<Object>} { products, total, page, totalPages }
  */
 export async function getCollectionProducts(options = {}) {
@@ -25,6 +26,7 @@ export async function getCollectionProducts(options = {}) {
     maxPrice,
     colors,
     sizes,
+    inStock,
   } = options;
 
   const skip = (page - 1) * limit;
@@ -69,23 +71,30 @@ export async function getCollectionProducts(options = {}) {
     }
   }
 
+  const variantConditions = [];
+
   if (colors && colors.length > 0) {
-    where.variants = {
-      some: {
-        color: { in: colors },
-        deletedAt: null,
-      },
-    };
+    variantConditions.push({
+      some: { color: { in: colors }, deletedAt: null },
+    });
   }
 
   if (sizes && sizes.length > 0) {
-    where.variants = {
-      some: {
-        ...(where.variants?.some || {}),
-        size: { in: sizes },
-        deletedAt: null,
-      },
-    };
+    variantConditions.push({
+      some: { size: { in: sizes }, deletedAt: null },
+    });
+  }
+
+  if (inStock) {
+    variantConditions.push({
+      some: { stockQuantity: { gt: 0 }, deletedAt: null },
+    });
+  }
+
+  if (variantConditions.length === 1) {
+    where.variants = variantConditions[0];
+  } else if (variantConditions.length > 1) {
+    where.AND = variantConditions.map((c) => ({ variants: c }));
   }
 
   let orderBy = {};

@@ -20,6 +20,7 @@ export async function POST(request) {
 
     const formData = await request.formData();
     const file = formData.get("file");
+    const folder = formData.get("folder") || "products";
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -42,7 +43,7 @@ export async function POST(request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const result = await uploadToCloudinary(buffer, "products");
+    const result = await uploadToCloudinary(buffer, folder);
 
     return NextResponse.json({
       publicId: result.publicId,

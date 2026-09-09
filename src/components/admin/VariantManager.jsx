@@ -7,7 +7,7 @@ const COLORS = [
   "Tan", "Navy", "Grey", "Pink", "Beige", "Gold", "Silver"
 ];
 
-const SIZES = ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"];
+const DEFAULT_SIZES = ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"];
 
 /**
  * Variant management component for products
@@ -15,8 +15,10 @@ const SIZES = ["36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"]
  * @param {Array} props.variants - Array of variant objects
  * @param {Function} props.onChange - Callback with updated variants
  * @param {string} props.productSlug - Product slug for SKU generation
+ * @param {Array} props.sizeRange - Array of allowed size strings for the selected gender
  */
-export default function VariantManager({ variants = [], onChange, productSlug = "" }) {
+export default function VariantManager({ variants = [], onChange, productSlug = "", sizeRange = null }) {
+  const SIZES = sizeRange || DEFAULT_SIZES;
   const [newVariant, setNewVariant] = useState({
     color: "",
     size: "",
@@ -130,13 +132,43 @@ export default function VariantManager({ variants = [], onChange, productSlug = 
             />
           </div>
 
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <button
               type="button"
               onClick={handleAddVariant}
-              className="w-full px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
             >
               Add Variant
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!newVariant.color) {
+                  setAddError("Select a color first, then click Add All Sizes");
+                  return;
+                }
+                const existingSizes = new Set(
+                  variants
+                    .filter((v) => v.color.toLowerCase() === newVariant.color.toLowerCase())
+                    .map((v) => v.size)
+                );
+                const newVariants = SIZES.filter((s) => !existingSizes.has(String(s))).map((size) => ({
+                  sku: generateSku(newVariant.color, String(size)),
+                  color: newVariant.color,
+                  size: String(size),
+                  stockQuantity: 0,
+                  status: "ACTIVE",
+                }));
+                if (newVariants.length === 0) {
+                  setAddError("All sizes already added for this color");
+                  return;
+                }
+                onChange([...variants, ...newVariants]);
+                setNewVariant({ color: "", size: "", stockQuantity: 0 });
+              }}
+              className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors whitespace-nowrap"
+            >
+              Add All Sizes
             </button>
           </div>
         </div>
