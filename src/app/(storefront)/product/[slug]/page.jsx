@@ -58,8 +58,9 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default async function ProductPage({ params }) {
+export default async function ProductPage({ params, searchParams }) {
   const { slug } = await params;
+  const { variant: initialVariantId } = await searchParams;
   const product = await getProductBySlug(slug);
 
   if (!product) {
@@ -118,7 +119,7 @@ export default async function ProductPage({ params }) {
 
         {/* Right - Info */}
         <div>
-          <ProductInfoPanel product={serializedProduct} variants={variants} />
+          <ProductInfoPanel product={serializedProduct} variants={variants} initialVariantId={initialVariantId} />
         </div>
       </div>
 

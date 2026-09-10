@@ -4,7 +4,7 @@ import prisma from "@/lib/db";
 export async function GET() {
   try {
     const rules = await prisma.shippingRule.findMany({
-      where: { isActive: true, deletedAt: null },
+      where: { isActive: true },
       orderBy: { createdAt: "asc" },
     });
 

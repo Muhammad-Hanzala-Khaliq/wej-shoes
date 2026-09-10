@@ -314,25 +314,15 @@ export default function CartProvider({ children }) {
   }, [removeItem, setIntent]);
 
   const clearCart = useCallback(async () => {
+    setCart({ items: [], subtotal: 0, itemCount: 0, cartId: null });
+
     try {
-      setError(null);
-
-      const response = await fetch("/api/cart", {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to clear cart");
-      }
-
-      setCart(data);
-      return { success: true };
+      await fetch("/api/cart", { method: "DELETE" });
     } catch (err) {
-      setError(err.message);
-      return { success: false, error: err.message };
+      console.error("Cart clear sync failed:", err);
     }
+
+    return { success: true };
   }, []);
 
   const mergeCart = useCallback(async () => {

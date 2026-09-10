@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import { generateSlug } from "@/lib/utils";
+import { generateUniqueSlug } from "@/lib/slug-generator";
 
 /**
  * Get all products with pagination and filters
@@ -183,21 +184,26 @@ export async function createProduct(data) {
     throw new Error("Name, categoryId, and regularPrice are required");
   }
 
-  const productSlug = slug || generateSlug(name);
-
-  const existingSlug = await prisma.product.findUnique({
-    where: { slug: productSlug },
+  const existingProduct = await prisma.product.findFirst({
+    where: {
+      name: { equals: name, mode: "insensitive" },
+      deletedAt: null,
+    },
+    select: { id: true, name: true },
   });
 
-  if (existingSlug) {
-    throw new Error("A product with this slug already exists");
+  if (existingProduct) {
+    throw new Error(`Product name "${name}" already exists. Please use a unique name.`);
   }
+
+  const baseSlug = slug || generateSlug(name);
+  const uniqueSlug = await generateUniqueSlug(baseSlug, "product");
 
   const product = await prisma.$transaction(async (tx) => {
     const newProduct = await tx.product.create({
       data: {
         name,
-        slug: productSlug,
+        slug: uniqueSlug,
         categoryId,
         description: description || null,
         regularPrice: parseFloat(regularPrice),
@@ -275,14 +281,27 @@ export async function updateProduct(id, data) {
     throw new Error("Product not found");
   }
 
-  if (slug && slug !== existing.slug) {
-    const slugExists = await prisma.product.findUnique({ where: { slug } });
-    if (slugExists && slugExists.id !== id) {
-      throw new Error("A product with this slug already exists");
+  if (name && name !== existing.name) {
+    const duplicateName = await prisma.product.findFirst({
+      where: {
+        name: { equals: name, mode: "insensitive" },
+        deletedAt: null,
+        id: { not: id },
+      },
+      select: { id: true, name: true },
+    });
+
+    if (duplicateName) {
+      throw new Error(`Product name "${name}" already exists. Please use a unique name.`);
     }
   }
 
-  const productSlug = slug || (name ? generateSlug(name) : existing.slug);
+  const baseSlug = slug || (name ? generateSlug(name) : existing.slug);
+  const productSlug = slug && slug !== existing.slug
+    ? await generateUniqueSlug(slug, "product", id)
+    : baseSlug === existing.slug
+      ? existing.slug
+      : await generateUniqueSlug(baseSlug, "product", id);
 
   const product = await prisma.$transaction(async (tx) => {
     const updatedProduct = await tx.product.update({

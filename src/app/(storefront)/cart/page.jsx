@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCart } from "@/features/cart/CartProvider";
 import { formatPrice } from "@/lib/utils";
@@ -13,6 +13,34 @@ function getOptimizedUrl(url, width) {
 export default function CartPage() {
   const { cart, isLoading, updateQuantity, removeItem } = useCart();
   const [removingId, setRemovingId] = useState(null);
+  const [shippingRules, setShippingRules] = useState([]);
+
+  useEffect(() => {
+    async function fetchShippingRules() {
+      try {
+        const res = await fetch("/api/shipping-rules");
+        if (res.ok) {
+          const data = await res.json();
+          setShippingRules(data);
+        }
+      } catch {}
+    }
+    fetchShippingRules();
+  }, []);
+
+  // Calculate shipping (same logic as checkout)
+  let shippingFee = 200;
+  let freeShippingThreshold = 5000;
+  if (shippingRules.length > 0) {
+    const activeRule = shippingRules.find((r) => r.type === "FLAT" || r.type === "FREE") || shippingRules[0];
+    if (activeRule) {
+      shippingFee = Number(activeRule.amount) || 0;
+      freeShippingThreshold = activeRule.freeShippingThreshold ? Number(activeRule.freeShippingThreshold) : null;
+    }
+  }
+  const qualifiesForFreeShipping = freeShippingThreshold && cart.subtotal >= freeShippingThreshold;
+  const finalShippingFee = qualifiesForFreeShipping ? 0 : shippingFee;
+  const total = cart.subtotal + finalShippingFee;
 
   const handleQuantityChange = (itemId, newQty) => {
     if (newQty < 1) return;
@@ -217,12 +245,22 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between">
                 <span style={{ color: "var(--text-secondary)" }}>Delivery</span>
-                <span className="font-medium" style={{ color: "var(--success)" }}>Free</span>
+                <span
+                  className="font-medium"
+                  style={{ color: finalShippingFee === 0 ? "var(--success)" : "var(--text-primary)" }}
+                >
+                  {finalShippingFee === 0 ? "Free" : formatPrice(finalShippingFee)}
+                </span>
               </div>
+              {finalShippingFee > 0 && freeShippingThreshold && (
+                <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                  Free shipping on orders over PKR {freeShippingThreshold.toLocaleString()}
+                </p>
+              )}
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.75rem", marginTop: "0.75rem" }}>
                 <div className="flex justify-between text-base font-semibold">
                   <span style={{ color: "var(--text-primary)" }}>Total</span>
-                  <span style={{ color: "var(--text-primary)" }}>{formatPrice(cart.subtotal)}</span>
+                  <span style={{ color: "var(--text-primary)" }}>{formatPrice(total)}</span>
                 </div>
               </div>
             </div>

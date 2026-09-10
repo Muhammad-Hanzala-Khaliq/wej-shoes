@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/features/cart/CartProvider";
@@ -24,10 +24,19 @@ function getOptimizedUrl(url, width) {
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
-  const { cart, isLoading: cartLoading } = useCart();
+  const { cart, isLoading: cartLoading, clearCart } = useCart();
+
+  const buyNowVariantId = searchParams.get("variant");
+  const buyNowQuantity = parseInt(searchParams.get("quantity") || "1", 10);
+  const isBuyNow = searchParams.get("buyNow") === "true";
+
+  const [buyNowItem, setBuyNowItem] = useState(null);
+  const [buyNowLoading, setBuyNowLoading] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [orderPlaced, setOrderPlaced] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [shippingRules, setShippingRules] = useState([]);
@@ -43,11 +52,36 @@ export default function CheckoutPage() {
     notes: "",
   });
 
+  // Fetch buy now variant details
   useEffect(() => {
+    if (!isBuyNow || !buyNowVariantId) return;
+
+    async function fetchVariant() {
+      setBuyNowLoading(true);
+      try {
+        const res = await fetch(`/api/checkout/variant/${buyNowVariantId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setBuyNowItem({ ...data, quantity: buyNowQuantity });
+        } else {
+          router.push("/cart");
+        }
+      } catch {
+        router.push("/cart");
+      } finally {
+        setBuyNowLoading(false);
+      }
+    }
+    fetchVariant();
+  }, [isBuyNow, buyNowVariantId, buyNowQuantity, router]);
+
+  // Only redirect to cart if NOT buy now, NOT after order placed, and cart is empty
+  useEffect(() => {
+    if (isBuyNow || buyNowLoading || orderPlaced) return;
     if (!cartLoading && (!cart.items || cart.items.length === 0)) {
       router.push("/cart");
     }
-  }, [cart, cartLoading, router]);
+  }, [cart, cartLoading, router, isBuyNow, buyNowLoading, orderPlaced]);
 
   useEffect(() => {
     async function fetchShippingRules() {
@@ -132,6 +166,8 @@ export default function CheckoutPage() {
         setIsSubmitting(false);
         return;
       }
+      await clearCart();
+      setOrderPlaced(true);
       router.push(`/order-confirmation/${data.orderNumber}`);
     } catch {
       setError("An error occurred. Please try again.");
@@ -139,7 +175,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (cartLoading) {
+  if (cartLoading || buyNowLoading) {
     return (
       <div className="container-page section">
         <div className="animate-pulse space-y-4">
@@ -157,7 +193,13 @@ export default function CheckoutPage() {
     );
   }
 
-  if (!cart.items || cart.items.length === 0) return null;
+  // Determine items to display: buyNow or cart
+  const displayItems = isBuyNow && buyNowItem ? [buyNowItem] : (cart.items || []);
+  const displaySubtotal = isBuyNow && buyNowItem
+    ? (buyNowItem.salePrice || buyNowItem.regularPrice) * buyNowItem.quantity
+    : cart.subtotal;
+
+  if (displayItems.length === 0) return null;
 
   let shippingFee = 200;
   let freeShippingThreshold = 5000;
@@ -168,9 +210,9 @@ export default function CheckoutPage() {
       freeShippingThreshold = activeRule.freeShippingThreshold ? Number(activeRule.freeShippingThreshold) : null;
     }
   }
-  const qualifiesForFreeShipping = freeShippingThreshold && cart.subtotal >= freeShippingThreshold;
+  const qualifiesForFreeShipping = freeShippingThreshold && displaySubtotal >= freeShippingThreshold;
   const finalShippingFee = qualifiesForFreeShipping ? 0 : shippingFee;
-  const total = cart.subtotal + finalShippingFee;
+  const total = displaySubtotal + finalShippingFee;
 
   return (
     <div className="container-page section">
@@ -361,31 +403,41 @@ export default function CheckoutPage() {
               <h2 className="heading-md mb-4" style={{ color: "var(--text-primary)" }}>Order Summary</h2>
 
               <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
-                {cart.items.map((item) => {
-                  const { product } = item;
+                {displayItems.map((item) => {
+                  const itemProduct = isBuyNow ? item : item.product;
+                  const itemVariant = isBuyNow ? item : item.variant;
+                  const itemName = isBuyNow ? item.productName : item.product.name;
+                  const itemImage = isBuyNow ? item.image : item.product.image;
+                  const itemQuantity = isBuyNow ? item.quantity : item.quantity;
+                  const itemPrice = isBuyNow
+                    ? (item.salePrice || item.regularPrice) * item.quantity
+                    : (item.product.salePrice ? item.product.salePrice * item.quantity : item.product.regularPrice * item.quantity);
+                  const itemColor = isBuyNow ? item.color : item.variant.color;
+                  const itemSize = isBuyNow ? item.size : item.variant.size;
+
                   return (
-                    <div key={item.id} className="flex gap-3">
+                    <div key={item.id || buyNowVariantId} className="flex gap-3">
                       <div
                         className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden"
                         style={{ background: "var(--surface)" }}
                       >
-                        {product.image && (
+                        {itemImage && (
                           <img
-                            src={getOptimizedUrl(product.image, 120)}
-                            alt={product.name}
+                            src={getOptimizedUrl(itemImage, 120)}
+                            alt={itemName}
                             className="w-full h-full object-cover"
                           />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium line-clamp-1" style={{ color: "var(--text-primary)" }}>
-                          {product.name}
+                          {itemName}
                         </p>
                         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                          {item.variant.color}{item.variant.size && ` / ${item.variant.size}`} &times; {item.quantity}
+                          {itemColor}{itemSize && ` / ${itemSize}`} &times; {itemQuantity}
                         </p>
                         <p className="text-sm font-medium mt-0.5" style={{ color: "var(--text-primary)" }}>
-                          {formatPrice(product.salePrice ? product.salePrice * item.quantity : product.regularPrice * item.quantity)}
+                          {formatPrice(itemPrice)}
                         </p>
                       </div>
                     </div>
@@ -396,7 +448,7 @@ export default function CheckoutPage() {
               <div className="space-y-2 text-sm" style={{ borderTop: "1px solid var(--border)", paddingTop: "1rem" }}>
                 <div className="flex justify-between">
                   <span style={{ color: "var(--text-secondary)" }}>Subtotal</span>
-                  <span style={{ color: "var(--text-primary)" }}>{formatPrice(cart.subtotal)}</span>
+                  <span style={{ color: "var(--text-primary)" }}>{formatPrice(displaySubtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span style={{ color: "var(--text-secondary)" }}>Shipping</span>
