@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { useToast } from "@/components/admin/ToastProvider";
 
 function formatPrice(price) {
   return `PKR ${Number(price).toLocaleString("en-PK")}`;
@@ -25,6 +28,9 @@ function debounce(fn, delay) {
 }
 
 export default function ProductsPage() {
+  const searchParams = useSearchParams();
+  const { showToast } = useToast();
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [total, setTotal] = useState(0);
@@ -37,6 +43,9 @@ export default function ProductsPage() {
   const [categoryId, setCategoryId] = useState("");
   const [status, setStatus] = useState("");
   const [gender, setGender] = useState("");
+
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, productId: null, productName: "" });
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchProducts = async (pageNum = 1) => {
     try {
@@ -84,7 +93,14 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchCategories();
     fetchProducts(1);
-  }, []);
+
+    const success = searchParams.get("success");
+    if (success === "created") {
+      showToast("Product created successfully", "success");
+    } else if (success === "updated") {
+      showToast("Product updated successfully", "success");
+    }
+  }, [searchParams, showToast]);
 
   useEffect(() => {
     setPage(1);
@@ -108,25 +124,32 @@ export default function ProductsPage() {
     fetchProducts(newPage);
   };
 
-  const handleDelete = async (id, name) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
-      return;
-    }
+  const handleDeleteClick = (id, name) => {
+    setDeleteConfirm({ open: true, productId: id, productName: name });
+  };
 
-    try {
-      const response = await fetch(`/api/admin/products/${id}`, {
-        method: "DELETE",
+  const handleDeleteConfirm = () => {
+    const id = deleteConfirm.productId;
+    if (!id) return;
+
+    setDeleteConfirm({ open: false, productId: null, productName: "" });
+    setDeletingId(id);
+
+    setTimeout(() => {
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      setDeletingId(null);
+      setTotal((prev) => Math.max(0, prev - 1));
+    }, 300);
+
+    fetch(`/api/admin/products/${id}`, { method: "DELETE" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Delete failed");
+        showToast("Product deleted", "success");
+      })
+      .catch(() => {
+        fetchProducts(page);
+        showToast("Failed to delete product", "error");
       });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete product");
-      }
-
-      fetchProducts(page);
-    } catch (err) {
-      alert(err.message);
-    }
   };
 
   const getTotalStock = (variants) => {
@@ -149,6 +172,16 @@ export default function ProductsPage() {
 
   return (
     <div>
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onClose={() => setDeleteConfirm({ open: false, productId: null, productName: "" })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Product"
+        message={`Are you sure you want to delete "${deleteConfirm.productName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        confirmVariant="danger"
+      />
+
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="heading-lg">Products Management</h1>
@@ -280,7 +313,14 @@ export default function ProductsPage() {
                 </thead>
                 <tbody>
                   {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
+                    <tr
+                      key={product.id}
+                      className="hover:bg-gray-50 transition-all duration-300"
+                      style={{
+                        opacity: deletingId === product.id ? 0 : 1,
+                        transform: deletingId === product.id ? "scale(0.95)" : "scale(1)",
+                      }}
+                    >
                       <td>
                         <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center" style={{ background: 'var(--surface-soft)' }}>
                           {product.images && product.images.length > 0 ? (
@@ -365,7 +405,7 @@ export default function ProductsPage() {
                             Edit
                           </Link>
                           <button
-                            onClick={() => handleDelete(product.id, product.name)}
+                            onClick={() => handleDeleteClick(product.id, product.name)}
                             className="link"
                             style={{ color: 'var(--danger)' }}
                           >

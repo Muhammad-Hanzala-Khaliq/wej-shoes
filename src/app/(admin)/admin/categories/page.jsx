@@ -1,21 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import { useToast } from "@/components/admin/ToastProvider";
 
-/**
- * Admin categories list page
- * Displays all categories with management options
- */
 export default function CategoriesPage() {
+  const searchParams = useSearchParams();
+  const { showToast } = useToast();
+
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  /**
-   * Fetch categories from API
-   */
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, categoryId: null, categoryName: "" });
+  const [deletingId, setDeletingId] = useState(null);
+
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
@@ -36,35 +38,54 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
 
-  /**
-   * Handle category deletion
-   * @param {string} id
-   */
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this category?")) {
-      return;
+    const success = searchParams.get("success");
+    if (success === "created") {
+      showToast("Category created successfully", "success");
+    } else if (success === "updated") {
+      showToast("Category updated successfully", "success");
     }
+  }, [searchParams, showToast]);
 
-    try {
-      const response = await fetch(`/api/admin/categories/${id}`, {
-        method: "DELETE",
-      });
+  const handleDeleteClick = (id, name) => {
+    setDeleteConfirm({ open: true, categoryId: id, categoryName: name });
+  };
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete category");
-      }
+  const handleDeleteConfirm = () => {
+    const id = deleteConfirm.categoryId;
+    if (!id) return;
 
+    setDeleteConfirm({ open: false, categoryId: null, categoryName: "" });
+    setDeletingId(id);
+
+    setTimeout(() => {
       setCategories((prev) => prev.filter((cat) => cat.id !== id));
-    } catch (err) {
-      alert(err.message);
-    }
+      setDeletingId(null);
+    }, 300);
+
+    fetch(`/api/admin/categories/${id}`, { method: "DELETE" })
+      .then((res) => {
+        if (!res.ok) throw new Error("Delete failed");
+        showToast("Category deleted", "success");
+      })
+      .catch(() => {
+        fetchCategories();
+        showToast("Failed to delete category", "error");
+      });
   };
 
   return (
     <div>
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onClose={() => setDeleteConfirm({ open: false, categoryId: null, categoryName: "" })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Category"
+        message={`Are you sure you want to delete "${deleteConfirm.categoryName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        confirmVariant="danger"
+      />
+
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Categories Management</h1>
         <Link href="/admin/categories/add">
@@ -131,7 +152,14 @@ export default function CategoriesPage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {categories.map((category) => (
-                  <tr key={category.id} className="hover:bg-gray-50">
+                  <tr
+                    key={category.id}
+                    className="hover:bg-gray-50 transition-all duration-300"
+                    style={{
+                      opacity: deletingId === category.id ? 0 : 1,
+                      transform: deletingId === category.id ? "scale(0.95)" : "scale(1)",
+                    }}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {category.name}
@@ -179,7 +207,7 @@ export default function CategoriesPage() {
                           Edit
                         </Link>
                         <button
-                          onClick={() => handleDelete(category.id)}
+                          onClick={() => handleDeleteClick(category.id, category.name)}
                           className="text-red-600 hover:text-red-800"
                         >
                           Delete

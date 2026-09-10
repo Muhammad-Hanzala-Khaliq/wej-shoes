@@ -8,6 +8,8 @@ function formatPrice(price) {
   return `PKR ${Number(price).toLocaleString("en-PK")}`;
 }
 
+const MAX_VISIBLE_SIZES = 6;
+
 export default function ProductCard({ product, clean = false }) {
   const images = product.images || [];
   const primaryImage = images.find((img) => img.isPrimary) || images[0];
@@ -17,9 +19,12 @@ export default function ProductCard({ product, clean = false }) {
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickAddSize, setQuickAddSize] = useState(null);
 
-  const sizes = [...new Set((product.variants || []).map((v) => v.size))].sort(
+  const allSizes = [...new Set((product.variants || []).map((v) => v.size))].sort(
     (a, b) => Number(a) - Number(b)
   );
+
+  const visibleSizes = allSizes.slice(0, MAX_VISIBLE_SIZES);
+  const overflowCount = allSizes.length - MAX_VISIBLE_SIZES;
 
   function isSizeAvailable(size) {
     return (product.variants || []).some(
@@ -53,6 +58,13 @@ export default function ProductCard({ product, clean = false }) {
     e.preventDefault();
     e.stopPropagation();
     setQuickAddSize(size || null);
+    setQuickAddOpen(true);
+  }
+
+  function handleOverflowClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setQuickAddSize(null);
     setQuickAddOpen(true);
   }
 
@@ -165,32 +177,39 @@ export default function ProductCard({ product, clean = false }) {
           )}
         </div>
 
-        {/* Size pills */}
-        {sizes.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2 opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity">
-            {sizes.map((size) => {
-              const available = isSizeAvailable(size);
-              return (
-                <button
-                  key={size}
-                  onClick={(e) => openQuickAdd(e, size)}
-                  disabled={!available}
-                  className="text-xs rounded-full px-2.5 py-1 transition-colors"
-                  style={{
-                    border: `1px solid var(--border-strong)`,
-                    background: "transparent",
-                    color: !available ? "var(--text-muted)" : "var(--text-primary)",
-                    textDecoration: !available ? "line-through" : "none",
-                    cursor: available ? "pointer" : "not-allowed",
-                    opacity: !available ? 0.5 : 1,
-                  }}
-                >
-                  {size}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* Size pills - single line, max 6 + overflow */}
+        <div className="flex flex-nowrap items-center gap-1.5 mt-2 h-7 overflow-hidden opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity">
+          {visibleSizes.map((size) => {
+            const available = isSizeAvailable(size);
+            return (
+              <button
+                key={size}
+                onClick={(e) => openQuickAdd(e, size)}
+                disabled={!available}
+                className="min-w-[28px] h-7 px-1.5 text-xs flex items-center justify-center rounded-full border transition-colors shrink-0"
+                style={{
+                  border: `1px solid var(--border-strong)`,
+                  background: "transparent",
+                  color: !available ? "var(--text-muted)" : "var(--text-primary)",
+                  textDecoration: !available ? "line-through" : "none",
+                  cursor: available ? "pointer" : "not-allowed",
+                  opacity: !available ? 0.5 : 1,
+                }}
+              >
+                {size}
+              </button>
+            );
+          })}
+          {overflowCount > 0 && (
+            <button
+              onClick={handleOverflowClick}
+              className="min-w-[28px] h-7 px-1.5 text-xs flex items-center justify-center rounded-full shrink-0 cursor-pointer"
+              style={{ background: "#f3f4f6", color: "#4b5563" }}
+            >
+              +{overflowCount}
+            </button>
+          )}
+        </div>
 
         <QuickAddModal
           product={product}
@@ -308,32 +327,39 @@ export default function ProductCard({ product, clean = false }) {
             )}
           </div>
 
-          {/* Size pills */}
-          {sizes.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2 opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity">
-              {sizes.map((size) => {
-                const available = isSizeAvailable(size);
-                return (
-                  <button
-                    key={size}
-                    onClick={(e) => openQuickAdd(e, size)}
-                    disabled={!available}
-                    className="text-xs rounded-full px-2.5 py-1 transition-colors"
-                    style={{
-                      border: `1px solid var(--border-strong)`,
-                      background: "transparent",
-                      color: !available ? "var(--text-muted)" : "var(--text-primary)",
-                      textDecoration: !available ? "line-through" : "none",
-                      cursor: available ? "pointer" : "not-allowed",
-                      opacity: !available ? 0.5 : 1,
-                    }}
-                  >
-                    {size}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {/* Size pills - single line, max 6 + overflow */}
+          <div className="flex flex-nowrap items-center gap-1.5 mt-2 h-7 overflow-hidden opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity">
+            {visibleSizes.map((size) => {
+              const available = isSizeAvailable(size);
+              return (
+                <button
+                  key={size}
+                  onClick={(e) => openQuickAdd(e, size)}
+                  disabled={!available}
+                  className="min-w-[28px] h-7 px-1.5 text-xs flex items-center justify-center rounded-full border transition-colors shrink-0"
+                  style={{
+                    border: `1px solid var(--border-strong)`,
+                    background: "transparent",
+                    color: !available ? "var(--text-muted)" : "var(--text-primary)",
+                    textDecoration: !available ? "line-through" : "none",
+                    cursor: available ? "pointer" : "not-allowed",
+                    opacity: !available ? 0.5 : 1,
+                  }}
+                >
+                  {size}
+                </button>
+              );
+            })}
+            {overflowCount > 0 && (
+              <button
+                onClick={handleOverflowClick}
+                className="min-w-[28px] h-7 px-1.5 text-xs flex items-center justify-center rounded-full shrink-0 cursor-pointer"
+                style={{ background: "#f3f4f6", color: "#4b5563" }}
+              >
+                +{overflowCount}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

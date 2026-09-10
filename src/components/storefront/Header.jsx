@@ -17,7 +17,7 @@ export default function Header() {
   const { storeName, logoUrl } = useSettings();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [menuData, setMenuData] = useState({ MEN: [], WOMEN: [] });
+  const [menuData, setMenuData] = useState({ MEN: [], WOMEN: [], KIDS: [] });
   const [openMenu, setOpenMenu] = useState(null);
   const [expandedGender, setExpandedGender] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -32,12 +32,14 @@ export default function Header() {
         const res = await fetch("/api/categories");
         if (res.ok) {
           const data = await res.json();
-          const structured = { MEN: [], WOMEN: [] };
+          const structured = { MEN: [], WOMEN: [], KIDS: [] };
           for (const parent of data.categories) {
             if (parent.gender === "MEN" && parent.children) {
               structured.MEN.push(...parent.children);
             } else if (parent.gender === "WOMEN" && parent.children) {
               structured.WOMEN.push(...parent.children);
+            } else if (parent.gender === "KIDS" && parent.children) {
+              structured.KIDS.push(...parent.children);
             }
           }
           setMenuData(structured);
@@ -84,7 +86,7 @@ export default function Header() {
   };
 
   const renderDropdown = (gender, items) => {
-    const label = gender === "MEN" ? "Men" : "Women";
+    const label = gender === "MEN" ? "Men" : gender === "WOMEN" ? "Women" : "Kids";
     const viewAllHref = `/collections/${label.toLowerCase()}`;
 
     return (
@@ -220,6 +222,30 @@ export default function Header() {
                 </svg>
               </Link>
               {openMenu === "WOMEN" && renderDropdown("WOMEN", menuData.WOMEN)}
+            </div>
+
+            {/* Kids dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => handleMenuEnter("KIDS")}
+              onMouseLeave={handleMenuLeave}
+            >
+              <Link
+                href="/collections/kids"
+                className="flex items-center gap-1.5 text-sm font-medium transition-colors"
+                style={{ color: openMenu === "KIDS" ? "var(--text-primary)" : "var(--text-secondary)" }}
+              >
+                Kids
+                <svg
+                  className={`w-3.5 h-3.5 pointer-events-none transition-transform duration-150 ${openMenu === "KIDS" ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </Link>
+              {openMenu === "KIDS" && renderDropdown("KIDS", menuData.KIDS)}
             </div>
           </nav>
 
@@ -473,6 +499,65 @@ export default function Header() {
                         style={{ color: "var(--text-muted)" }}
                       >
                         Browse Women
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Kids accordion */}
+              <div>
+                <button
+                  onClick={() => setExpandedGender(expandedGender === "KIDS" ? null : "KIDS")}
+                  className="flex items-center justify-between w-full py-2.5 px-3 rounded-lg text-left"
+                  style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                >
+                  <span>Kids</span>
+                  <svg
+                    className={`w-4 h-4 transition-transform duration-150 ${expandedGender === "KIDS" ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {expandedGender === "KIDS" && (
+                  <div className="pl-4 pb-1">
+                    <Link
+                      href="/collections/kids"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block py-2 pl-3 pr-3 text-sm font-semibold rounded-lg"
+                      style={{ color: "var(--text-primary)" }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    >
+                      View All Kids
+                    </Link>
+                    {menuData.KIDS.length > 0 ? (
+                      menuData.KIDS.map((item) => (
+                        <Link
+                          key={item.id}
+                          href={`/collections/${item.slug}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="block py-2 pl-3 pr-3 text-sm rounded-lg"
+                          style={{ color: "var(--text-secondary)" }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                        >
+                          {item.name}
+                        </Link>
+                      ))
+                    ) : (
+                      <Link
+                        href="/collections/kids"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block py-2 pl-3 pr-3 text-sm rounded-lg"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        Browse Kids
                       </Link>
                     )}
                   </div>

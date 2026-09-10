@@ -22,6 +22,9 @@ async function getCollectionInfo(slug) {
   if (slug === "women") {
     return { gender: "WOMEN", title: "Women", description: "Premium footwear for women" };
   }
+  if (slug === "kids") {
+    return { gender: "KIDS", title: "Kids", description: "Comfortable footwear for active kids" };
+  }
   if (slug === "new") {
     return { gender: null, title: "New Arrivals", description: "Latest additions to our collection" };
   }

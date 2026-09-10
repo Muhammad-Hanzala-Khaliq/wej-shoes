@@ -105,9 +105,9 @@ async function getGenderImage(gender) {
 }
 
 export const metadata = {
-  title: "WEJ Shoes - Premium Footwear for Men & Women",
+  title: "WEJ Shoes - Premium Footwear for Men, Women & Kids",
   description:
-    "Discover premium footwear for men and women at WEJ Shoes. Quality craftsmanship, modern designs, and unbeatable comfort. Cash on Delivery available across Pakistan.",
+    "Discover premium footwear for men, women, and kids at WEJ Shoes. Quality craftsmanship, modern designs, and unbeatable comfort. Cash on Delivery available across Pakistan.",
 };
 
 export default async function HomePage() {

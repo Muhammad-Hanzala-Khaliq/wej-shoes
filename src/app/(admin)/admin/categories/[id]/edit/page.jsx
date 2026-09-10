@@ -112,7 +112,7 @@ export default function EditCategoryPage() {
         throw new Error(data.error || "Failed to update category");
       }
 
-      router.push("/admin/categories");
+      router.push("/admin/categories?success=updated");
     } catch (err) {
       setServerError(err.message);
     } finally {

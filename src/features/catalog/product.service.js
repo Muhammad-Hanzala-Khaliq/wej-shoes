@@ -221,33 +221,32 @@ export async function createProduct(data) {
     }
 
     if (variants.length > 0) {
-      for (const variant of variants) {
-        await tx.productVariant.create({
-          data: {
-            productId: newProduct.id,
-            sku: variant.sku,
-            color: variant.color,
-            size: variant.size,
-            stockQuantity: variant.stockQuantity || 0,
-            status: variant.status || "ACTIVE",
-          },
-        });
-      }
+      await tx.productVariant.createMany({
+        data: variants.map((v) => ({
+          productId: newProduct.id,
+          sku: v.sku,
+          color: v.color,
+          size: String(v.size),
+          stockQuantity: Number(v.stockQuantity) || 0,
+          status: v.status || "ACTIVE",
+        })),
+        skipDuplicates: true,
+      });
     }
 
-    return tx.product.findUnique({
-      where: { id: newProduct.id },
-      include: {
-        category: {
-          select: { id: true, name: true, slug: true, gender: true },
-        },
-        images: { orderBy: { sortOrder: "asc" } },
-        variants: { orderBy: [{ color: "asc" }, { size: "asc" }] },
-      },
-    });
-  });
+    return newProduct;
+  }, { maxWait: 20000, timeout: 60000 });
 
-  return product;
+  return prisma.product.findUnique({
+    where: { id: product.id },
+    include: {
+      category: {
+        select: { id: true, name: true, slug: true, gender: true },
+      },
+      images: { orderBy: { sortOrder: "asc" } },
+      variants: { orderBy: [{ color: "asc" }, { size: "asc" }] },
+    },
+  });
 }
 
 /**
@@ -333,68 +332,72 @@ export async function updateProduct(id, data) {
         });
       }
 
-      for (const variant of variants) {
-        if (variant.id) {
-          const existingVariant = existingVariants.find((v) => v.id === variant.id);
-          if (existingVariant) {
-            const stockChange = (variant.stockQuantity || 0) - existingVariant.stockQuantity;
+      const toUpdate = variants.filter((v) => v.id);
+      const toCreate = variants.filter((v) => !v.id);
 
-            await tx.productVariant.update({
-              where: { id: variant.id },
-              data: {
-                sku: variant.sku || existingVariant.sku,
-                color: variant.color || existingVariant.color,
-                size: variant.size || existingVariant.size,
-                stockQuantity: variant.stockQuantity !== undefined ? variant.stockQuantity : existingVariant.stockQuantity,
-                status: variant.status || existingVariant.status,
-              },
-            });
+      for (const variant of toUpdate) {
+        const existingVariant = existingVariants.find((v) => v.id === variant.id);
+        if (existingVariant) {
+          const stockChange = (variant.stockQuantity || 0) - existingVariant.stockQuantity;
 
-            if (stockChange !== 0) {
-              await tx.inventoryHistory.create({
-                data: {
-                  variantId: variant.id,
-                  previousQuantity: existingVariant.stockQuantity,
-                  changeQuantity: stockChange,
-                  newQuantity: variant.stockQuantity !== undefined ? variant.stockQuantity : existingVariant.stockQuantity,
-                  reason: "Product update",
-                  referenceType: "PRODUCT",
-                  referenceId: id,
-                },
-              });
-            }
-          }
-        } else {
-          await tx.productVariant.create({
+          await tx.productVariant.update({
+            where: { id: variant.id },
             data: {
-              productId: id,
-              sku: variant.sku,
-              color: variant.color,
-              size: variant.size,
-              stockQuantity: variant.stockQuantity || 0,
-              status: variant.status || "ACTIVE",
+              sku: variant.sku || existingVariant.sku,
+              color: variant.color || existingVariant.color,
+              size: variant.size || existingVariant.size,
+              stockQuantity: variant.stockQuantity !== undefined ? variant.stockQuantity : existingVariant.stockQuantity,
+              status: variant.status || existingVariant.status,
             },
           });
+
+          if (stockChange !== 0) {
+            await tx.inventoryHistory.create({
+              data: {
+                variantId: variant.id,
+                previousQuantity: existingVariant.stockQuantity,
+                changeQuantity: stockChange,
+                newQuantity: variant.stockQuantity !== undefined ? variant.stockQuantity : existingVariant.stockQuantity,
+                reason: "Product update",
+                referenceType: "PRODUCT",
+                referenceId: id,
+              },
+            });
+          }
         }
+      }
+
+      if (toCreate.length > 0) {
+        await tx.productVariant.createMany({
+          data: toCreate.map((v) => ({
+            productId: id,
+            sku: v.sku,
+            color: v.color,
+            size: String(v.size),
+            stockQuantity: Number(v.stockQuantity) || 0,
+            status: v.status || "ACTIVE",
+          })),
+          skipDuplicates: true,
+        });
       }
     }
 
-    return tx.product.findUnique({
-      where: { id },
-      include: {
-        category: {
-          select: { id: true, name: true, slug: true, gender: true },
-        },
-        images: { orderBy: { sortOrder: "asc" } },
-        variants: {
-          where: { deletedAt: null },
-          orderBy: [{ color: "asc" }, { size: "asc" }],
-        },
-      },
-    });
-  });
+    return updatedProduct;
+  }, { maxWait: 20000, timeout: 60000 });
 
-  return product;
+  return prisma.product.findUnique({
+    where: { id },
+    include: {
+      category: {
+        select: { id: true, name: true, slug: true, gender: true },
+      },
+      images: { orderBy: { sortOrder: "asc" } },
+      variants: {
+        where: { deletedAt: null },
+        orderBy: [{ color: "asc" }, { size: "asc" }],
+      },
+    },
+  });
 }
 
 /**
@@ -419,7 +422,7 @@ export async function deleteProduct(id) {
       where: { productId: id, deletedAt: null },
       data: { deletedAt: new Date() },
     });
-  });
+  }, { maxWait: 20000, timeout: 60000 });
 
   return { message: "Product deleted successfully" };
 }
@@ -446,7 +449,7 @@ export async function restoreProduct(id) {
       where: { productId: id },
       data: { deletedAt: null },
     });
-  });
+  }, { maxWait: 20000, timeout: 60000 });
 
   return { message: "Product restored successfully" };
 }
@@ -495,7 +498,7 @@ export async function updateVariantStock(variantId, change, reason, referenceId,
     });
 
     return v;
-  });
+  }, { maxWait: 20000, timeout: 60000 });
 
   return updated;
 }

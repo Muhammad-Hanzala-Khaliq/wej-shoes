@@ -111,7 +111,6 @@ export async function createOrder({ userId, sessionId, shippingAddress, notes })
   const totalAmount = subtotal + shippingFee;
   const orderNumber = generateOrderNumber();
 
-  // Create order in transaction
   const order = await prisma.$transaction(async (tx) => {
     // Create the order
     const newOrder = await tx.order.create({
@@ -187,7 +186,7 @@ export async function createOrder({ userId, sessionId, shippingAddress, notes })
     });
 
     return newOrder;
-  });
+  }, { maxWait: 20000, timeout: 60000 });
 
   // Return order with items
   return prisma.order.findUnique({
@@ -362,7 +361,7 @@ export async function cancelOrder(orderId, userId, reason) {
     }
 
     return updated;
-  });
+  }, { maxWait: 20000, timeout: 60000 });
 
   return prisma.order.findUnique({
     where: { id: updatedOrder.id },

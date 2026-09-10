@@ -156,7 +156,7 @@ export default function AddProductPage() {
         throw new Error(data.error || "Failed to create product");
       }
 
-      router.push("/admin/products");
+      router.push("/admin/products?success=created");
     } catch (err) {
       setServerError(err.message);
     } finally {

@@ -215,7 +215,7 @@ export default function EditProductPage() {
         throw new Error(data.error || "Failed to update product");
       }
 
-      router.push("/admin/products");
+      router.push("/admin/products?success=updated");
     } catch (err) {
       setServerError(err.message);
     } finally {

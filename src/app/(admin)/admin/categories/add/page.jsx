@@ -97,7 +97,7 @@ export default function AddCategoryPage() {
         throw new Error(data.error || "Failed to create category");
       }
 
-      router.push("/admin/categories");
+      router.push("/admin/categories?success=created");
     } catch (err) {
       setServerError(err.message);
     } finally {

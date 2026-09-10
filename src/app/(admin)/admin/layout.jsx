@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ToastProvider } from "@/components/admin/ToastProvider";
 
 /**
  * Admin layout with authentication protection
@@ -14,6 +15,7 @@ export default async function AdminLayout({ children }) {
   }
 
   return (
+    <ToastProvider>
     <div className="min-h-screen" style={{ background: 'var(--surface-soft)' }}>
       {/* Top Header */}
       <header className="border-b" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
@@ -129,6 +131,7 @@ export default async function AdminLayout({ children }) {
         <main className="flex-1 p-6">{children}</main>
       </div>
     </div>
+    </ToastProvider>
   );
 }
 
