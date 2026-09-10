@@ -1,6 +1,42 @@
 import prisma from "@/lib/db";
 
 /**
+ * Get collection metadata by slug
+ * @param {string} slug
+ * @returns {Promise<Object|null>} { gender, categorySlug, title, description }
+ */
+export async function getCollectionInfo(slug) {
+  if (slug === "men") {
+    return { gender: "MEN", categorySlug: null, title: "Men", description: "Premium footwear for men" };
+  }
+  if (slug === "women") {
+    return { gender: "WOMEN", categorySlug: null, title: "Women", description: "Premium footwear for women" };
+  }
+  if (slug === "kids") {
+    return { gender: "KIDS", categorySlug: null, title: "Kids", description: "Fun & comfortable footwear for little ones" };
+  }
+  if (slug === "new") {
+    return { gender: null, categorySlug: null, title: "New Arrivals", description: "Latest additions to our collection" };
+  }
+
+  const category = await prisma.category.findUnique({
+    where: { slug, deletedAt: null },
+    select: { name: true, gender: true },
+  });
+
+  if (category) {
+    return {
+      gender: category.gender,
+      categorySlug: slug,
+      title: category.name.toUpperCase(),
+      description: `Shop ${category.name} footwear`,
+    };
+  }
+
+  return null;
+}
+
+/**
  * Get products for collection pages with filtering, sorting, and pagination
  * @param {Object} options
  * @param {string} [options.gender] - Filter by gender (MEN/WOMEN)

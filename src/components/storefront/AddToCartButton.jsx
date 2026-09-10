@@ -109,7 +109,7 @@ export default function AddToCartButton({ variant, product, disabled }) {
                 ? "var(--success)"
                 : isDisabled
                   ? "#e5e5e5"
-                  : "#1a1714",
+                  : "#000000",
               color: added
                 ? "#fff"
                 : isDisabled
@@ -118,10 +118,10 @@ export default function AddToCartButton({ variant, product, disabled }) {
               cursor: isDisabled ? "not-allowed" : "pointer",
             }}
             onMouseEnter={(e) => {
-              if (!isDisabled && !added) e.target.style.background = "#292524";
+              if (!isDisabled && !added) e.target.style.background = "#262626";
             }}
             onMouseLeave={(e) => {
-              if (!isDisabled && !added) e.target.style.background = "#1a1714";
+              if (!isDisabled && !added) e.target.style.background = "#000000";
             }}
           >
             {added ? "Added ✓" : "Add to cart"}

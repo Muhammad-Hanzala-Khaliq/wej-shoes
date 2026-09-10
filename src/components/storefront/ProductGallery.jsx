@@ -103,7 +103,7 @@ export default function ProductGallery({ images = [], productName }) {
                 onClick={() => handleDotClick(index)}
                 className="w-2 h-2 rounded-full transition-all duration-200"
                 style={{
-                  background: index === selectedIndex ? "#1a1714" : "#d1d5db",
+                  background: index === selectedIndex ? "#000000" : "#d1d5db",
                 }}
                 aria-label={`Go to image ${index + 1}`}
               />

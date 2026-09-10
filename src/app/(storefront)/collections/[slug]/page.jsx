@@ -1,6 +1,5 @@
 import Link from "next/link";
-import prisma from "@/lib/db";
-import { getCollectionProducts, getAvailableFilters } from "@/features/catalog/collection.service";
+import { getCollectionInfo, getCollectionProducts, getAvailableFilters } from "@/features/catalog/collection.service";
 import ProductGrid from "@/components/storefront/ProductGrid";
 import CollectionToolbar from "@/components/storefront/CollectionToolbar";
 
@@ -13,37 +12,6 @@ function serialize(data) {
       return value;
     })
   );
-}
-
-async function getCollectionInfo(slug) {
-  if (slug === "men") {
-    return { gender: "MEN", title: "Men", description: "Premium footwear for men" };
-  }
-  if (slug === "women") {
-    return { gender: "WOMEN", title: "Women", description: "Premium footwear for women" };
-  }
-  if (slug === "kids") {
-    return { gender: "KIDS", title: "Kids", description: "Comfortable footwear for active kids" };
-  }
-  if (slug === "new") {
-    return { gender: null, title: "New Arrivals", description: "Latest additions to our collection" };
-  }
-
-  const category = await prisma.category.findUnique({
-    where: { slug, deletedAt: null },
-    select: { name: true, gender: true },
-  });
-
-  if (category) {
-    return {
-      gender: category.gender,
-      categorySlug: slug,
-      title: category.name.toUpperCase(),
-      description: `Shop ${category.name} footwear`,
-    };
-  }
-
-  return null;
 }
 
 export async function generateMetadata({ params }) {

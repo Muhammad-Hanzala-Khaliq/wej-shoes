@@ -15,7 +15,7 @@ const navLinks = [
 export default function Header() {
   const { data: session, status } = useSession();
   const { storeName, logoUrl } = useSettings();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [menuData, setMenuData] = useState({ MEN: [], WOMEN: [], KIDS: [] });
   const [openMenu, setOpenMenu] = useState(null);
@@ -62,19 +62,17 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [mobileMenuOpen]);
+  }, [menuOpen]);
 
   const handleLogout = () => {
     setDropdownOpen(false);
-    setMobileMenuOpen(false);
+    setMenuOpen(false);
     signOut({ callbackUrl: "/" });
   };
+
+  const closeMenu = () => setMenuOpen(false);
 
   const handleMenuEnter = (gender) => {
     clearTimeout(menuTimeoutRef.current);
@@ -142,6 +140,73 @@ export default function Header() {
               Browse {label}
             </Link>
           )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderAccordion = (gender, label, items) => {
+    const isOpen = expandedGender === gender;
+    const viewAllHref = `/collections/${label.toLowerCase()}`;
+
+    return (
+      <div>
+        <button
+          onClick={() => setExpandedGender(isOpen ? null : gender)}
+          className="flex items-center justify-between w-full py-2.5 px-3 rounded-lg text-left"
+          style={{ color: "var(--text-secondary)" }}
+          onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+        >
+          <span>{label}</span>
+          <svg
+            className={`w-4 h-4 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        <div className={`grid transition-all duration-300 ease-in-out ${isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+          <div className="overflow-hidden">
+            <div className="pl-4 pb-1">
+              <Link
+                href={viewAllHref}
+                onClick={closeMenu}
+                className="block py-2 pl-3 pr-3 text-sm font-semibold rounded-lg"
+                style={{ color: "var(--text-primary)" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                View All {label}
+              </Link>
+              {items.length > 0 ? (
+                items.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/collections/${item.slug}`}
+                    onClick={closeMenu}
+                    className="block py-2 pl-3 pr-3 text-sm rounded-lg"
+                    style={{ color: "var(--text-secondary)" }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                  >
+                    {item.name}
+                  </Link>
+                ))
+              ) : (
+                <Link
+                  href={viewAllHref}
+                  onClick={closeMenu}
+                  className="block py-2 pl-3 pr-3 text-sm rounded-lg"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  Browse {label}
+                </Link>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -336,7 +401,7 @@ export default function Header() {
 
             <button
               type="button"
-              onClick={() => setMobileMenuOpen(true)}
+              onClick={() => setMenuOpen(true)}
               className="md:hidden p-2"
               style={{ color: "var(--text-secondary)" }}
             >
@@ -348,286 +413,117 @@ export default function Header() {
         </div>
       </div>
 
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="absolute inset-0"
-            style={{ background: "rgba(28, 25, 23, 0.5)" }}
-            onClick={() => setMobileMenuOpen(false)}
-          />
-          <div
-            className="absolute right-0 top-0 h-full w-72 shadow-xl overflow-y-auto"
-            style={{ background: "var(--surface)" }}
+      {/* Backdrop - always mounted, fades via opacity */}
+      <div
+        className={`fixed inset-0 bg-black/40 z-40 md:hidden transition-opacity duration-300 ease-out ${
+          menuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={closeMenu}
+        aria-hidden="true"
+      />
+
+      {/* Drawer panel - always mounted, slides via transform */}
+      <div
+        className={`fixed inset-y-0 right-0 z-50 w-80 max-w-[85vw] bg-white shadow-2xl transform transition-transform duration-300 ease-out md:hidden ${
+          menuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <span className="font-semibold text-gray-900">Menu</span>
+          <button
+            onClick={closeMenu}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Close menu"
           >
-            <div
-              className="flex items-center justify-between p-4"
-              style={{ borderBottom: "1px solid var(--border)" }}
-            >
-              <span className="font-bold text-lg" style={{ color: "var(--text-primary)" }}>Menu</span>
-              <button
-                onClick={() => setMobileMenuOpen(false)}
-                className="p-2"
-                style={{ color: "var(--text-secondary)" }}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <nav className="p-4 space-y-1">
-              {/* Home */}
-              <Link
-                href="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-2.5 px-3 rounded-lg"
-                style={{ color: "var(--text-secondary)" }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-              >
-                Home
-              </Link>
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="overflow-y-auto h-[calc(100%-60px)] p-4 space-y-1">
+          {/* Home */}
+          <Link
+            href="/"
+            onClick={closeMenu}
+            className="block py-2.5 px-3 rounded-lg transition-colors"
+            style={{ color: "var(--text-secondary)" }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            Home
+          </Link>
 
-              {/* Men accordion */}
-              <div>
-                <button
-                  onClick={() => setExpandedGender(expandedGender === "MEN" ? null : "MEN")}
-                  className="flex items-center justify-between w-full py-2.5 px-3 rounded-lg text-left"
+          {/* Men accordion */}
+          {renderAccordion("MEN", "Men", menuData.MEN)}
+
+          {/* Women accordion */}
+          {renderAccordion("WOMEN", "Women", menuData.WOMEN)}
+
+          {/* Kids accordion */}
+          {renderAccordion("KIDS", "Kids", menuData.KIDS)}
+
+          {/* New Arrivals */}
+          <Link
+            href="/collections/new"
+            onClick={closeMenu}
+            className="block py-2.5 px-3 rounded-lg transition-colors"
+            style={{ color: "var(--text-secondary)" }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+          >
+            New Arrivals
+          </Link>
+
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.75rem", marginTop: "0.5rem" }}>
+            {session ? (
+              <>
+                <Link
+                  href="/account"
+                  onClick={closeMenu}
+                  className="block py-2.5 px-3 rounded-lg transition-colors"
                   style={{ color: "var(--text-secondary)" }}
                   onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
                   onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                 >
-                  <span>Men</span>
-                  <svg
-                    className={`w-4 h-4 transition-transform duration-150 ${expandedGender === "MEN" ? "rotate-180" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {expandedGender === "MEN" && (
-                  <div className="pl-4 pb-1">
-                    <Link
-                      href="/collections/men"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block py-2 pl-3 pr-3 text-sm font-semibold rounded-lg"
-                      style={{ color: "var(--text-primary)" }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    >
-                      View All Men
-                    </Link>
-                    {menuData.MEN.length > 0 ? (
-                      menuData.MEN.map((item) => (
-                        <Link
-                          key={item.id}
-                          href={`/collections/${item.slug}`}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="block py-2 pl-3 pr-3 text-sm rounded-lg"
-                          style={{ color: "var(--text-secondary)" }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                        >
-                          {item.name}
-                        </Link>
-                      ))
-                    ) : (
-                      <Link
-                        href="/collections/men"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block py-2 pl-3 pr-3 text-sm rounded-lg"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        Browse Men
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Women accordion */}
-              <div>
-                <button
-                  onClick={() => setExpandedGender(expandedGender === "WOMEN" ? null : "WOMEN")}
-                  className="flex items-center justify-between w-full py-2.5 px-3 rounded-lg text-left"
-                  style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                >
-                  <span>Women</span>
-                  <svg
-                    className={`w-4 h-4 transition-transform duration-150 ${expandedGender === "WOMEN" ? "rotate-180" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {expandedGender === "WOMEN" && (
-                  <div className="pl-4 pb-1">
-                    <Link
-                      href="/collections/women"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block py-2 pl-3 pr-3 text-sm font-semibold rounded-lg"
-                      style={{ color: "var(--text-primary)" }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    >
-                      View All Women
-                    </Link>
-                    {menuData.WOMEN.length > 0 ? (
-                      menuData.WOMEN.map((item) => (
-                        <Link
-                          key={item.id}
-                          href={`/collections/${item.slug}`}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="block py-2 pl-3 pr-3 text-sm rounded-lg"
-                          style={{ color: "var(--text-secondary)" }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                        >
-                          {item.name}
-                        </Link>
-                      ))
-                    ) : (
-                      <Link
-                        href="/collections/women"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block py-2 pl-3 pr-3 text-sm rounded-lg"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        Browse Women
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Kids accordion */}
-              <div>
-                <button
-                  onClick={() => setExpandedGender(expandedGender === "KIDS" ? null : "KIDS")}
-                  className="flex items-center justify-between w-full py-2.5 px-3 rounded-lg text-left"
-                  style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                >
-                  <span>Kids</span>
-                  <svg
-                    className={`w-4 h-4 transition-transform duration-150 ${expandedGender === "KIDS" ? "rotate-180" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {expandedGender === "KIDS" && (
-                  <div className="pl-4 pb-1">
-                    <Link
-                      href="/collections/kids"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block py-2 pl-3 pr-3 text-sm font-semibold rounded-lg"
-                      style={{ color: "var(--text-primary)" }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    >
-                      View All Kids
-                    </Link>
-                    {menuData.KIDS.length > 0 ? (
-                      menuData.KIDS.map((item) => (
-                        <Link
-                          key={item.id}
-                          href={`/collections/${item.slug}`}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="block py-2 pl-3 pr-3 text-sm rounded-lg"
-                          style={{ color: "var(--text-secondary)" }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                        >
-                          {item.name}
-                        </Link>
-                      ))
-                    ) : (
-                      <Link
-                        href="/collections/kids"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block py-2 pl-3 pr-3 text-sm rounded-lg"
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        Browse Kids
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* New Arrivals */}
-              <Link
-                href="/collections/new"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block py-2.5 px-3 rounded-lg"
-                style={{ color: "var(--text-secondary)" }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-              >
-                New Arrivals
-              </Link>
-
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.75rem", marginTop: "0.5rem" }}>
-                {session ? (
-                  <>
-                    <Link
-                      href="/account"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block py-2.5 px-3 rounded-lg"
-                      style={{ color: "var(--text-secondary)" }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    >
-                      My Account
-                    </Link>
-                    {isAdmin && (
-                      <Link
-                        href="/admin/dashboard"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="block py-2.5 px-3 rounded-lg"
-                        style={{ color: "var(--text-secondary)" }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                      >
-                        Admin Panel
-                      </Link>
-                    )}
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full text-left py-2.5 px-3 rounded-lg"
-                      style={{ color: "var(--danger)" }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                      onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                    >
-                      Logout
-                    </button>
-                  </>
-                ) : (
+                  My Account
+                </Link>
+                {isAdmin && (
                   <Link
-                    href="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block py-2.5 px-3 rounded-lg"
+                    href="/admin/dashboard"
+                    onClick={closeMenu}
+                    className="block py-2.5 px-3 rounded-lg transition-colors"
                     style={{ color: "var(--text-secondary)" }}
                     onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
                     onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                   >
-                    Login
+                    Admin Panel
                   </Link>
                 )}
-              </div>
-            </nav>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left py-2.5 px-3 rounded-lg transition-colors"
+                  style={{ color: "var(--danger)" }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                onClick={closeMenu}
+                className="block py-2.5 px-3 rounded-lg transition-colors"
+                style={{ color: "var(--text-secondary)" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
-      )}
+      </div>
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     </header>
   );

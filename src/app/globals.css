@@ -1,62 +1,47 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 @import "tailwindcss";
-
-/* ════════════════════════════════════════════════════════
-   DESIGN TOKENS - Light Theme (Premium Shoe Store)
-   Yahan change karo, puri website update hogi
-   ════════════════════════════════════════════════════════ */
 :root {
-  /* ── Colors ── */
-  --bg: #faf9f7;              /* Warm ivory background */
-  --surface: #ffffff;         /* Cards, panels */
-  --surface-soft: #f5f2ee;    /* Subtle sections */
-  --border: #e8e2da;          /* Light borders */
-  --border-strong: #d8cfc4;
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-soft: #f5f5f5;
+  --border: #e5e5e5;
+  --border-strong: #d4d4d4;
 
-  --text-primary: #1a1714;    /* Headings */
-  --text-secondary: #57534e;  /* Body text */
-  --text-muted: #8a847c;      /* Hints, captions */
+  --text-primary: #000000;
+  --text-secondary: #525252;
+  --text-muted: #a3a3a3;
 
-  --brand: #9a3412;           /* Cognac leather (accent) */
-  --brand-hover: #7c2d12;
-  --brand-soft: #fdf0e7;
+  --brand: #000000;
+  --brand-hover: #262626;
+  --brand-soft: #f5f5f5;
 
-  --ink: #1c1917;             /* Primary buttons (charcoal) */
-  --ink-hover: #292524;
+  --ink: #000000;
+  --ink-hover: #262626;
 
-  --success: #15803d;
+  --success: #16a34a;
   --success-soft: #f0fdf4;
-  --warning: #b45309;
+  --warning: #d97706;
   --warning-soft: #fffbeb;
-  --danger: #b91c1c;
+  --danger: #dc2626;
   --danger-soft: #fef2f2;
 
-  /* ── Typography ── */
-  --font-display: "Fraunces", Georgia, serif;
+  --font-display: "Inter", system-ui, sans-serif;
   --font-sans: "Inter", system-ui, sans-serif;
 
-  /* ── Radius ── */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
   --radius-full: 9999px;
 
-  /* ── Shadows ── */
-  --shadow-sm: 0 1px 2px rgba(26, 23, 20, 0.05);
-  --shadow-md: 0 4px 12px rgba(26, 23, 20, 0.08);
-  --shadow-lg: 0 12px 32px rgba(26, 23, 20, 0.12);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
 
-  /* ── Layout ── */
   --container: 1200px;
 }
 
-/* ════════════════════════════════════════════════════════
-   BASE
-   ════════════════════════════════════════════════════════ */::-webkit-scrollbar {
-  display: none;
-}
-html { scroll-behavior: smooth; scrollbar-width: none; }
+html { scroll-behavior: smooth; }
 
 body {
   background: var(--bg);
@@ -67,14 +52,10 @@ body {
 
 h1, h2, h3, .font-display {
   font-family: var(--font-display);
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-/* ════════════════════════════════════════════════════════
-   REUSABLE COMPONENT CLASSES
-   ════════════════════════════════════════════════════════ */
-
-/* Container */
 .container-page {
   max-width: var(--container);
   margin-inline: auto;
@@ -83,7 +64,6 @@ h1, h2, h3, .font-display {
 @media (min-width: 640px) { .container-page { padding-inline: 1.5rem; } }
 @media (min-width: 1024px) { .container-page { padding-inline: 2rem; } }
 
-/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -100,11 +80,11 @@ h1, h2, h3, .font-display {
 }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.btn-primary { background: var(--ink); color: #fff; }
+.btn-primary { background: var(--ink); color: #ffffff; }
 .btn-primary:hover:not(:disabled) { background: var(--ink-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
 
-.btn-brand { background: var(--brand); color: #fff; }
-.btn-brand:hover:not(:disabled) { background: var(--brand-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn-brand { background: var(--ink); color: #ffffff; }
+.btn-brand:hover:not(:disabled) { background: var(--ink-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
 
 .btn-outline { background: var(--surface); color: var(--text-primary); border-color: var(--border-strong); }
 .btn-outline:hover:not(:disabled) { border-color: var(--ink); background: var(--surface-soft); }
@@ -112,14 +92,13 @@ h1, h2, h3, .font-display {
 .btn-ghost { background: transparent; color: var(--text-secondary); }
 .btn-ghost:hover:not(:disabled) { background: var(--surface-soft); color: var(--text-primary); }
 
-.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger { background: var(--danger); color: #ffffff; }
 .btn-danger:hover:not(:disabled) { background: #991b1b; }
 
 .btn-sm { padding: 0.45rem 0.9rem; font-size: 0.8rem; border-radius: var(--radius-sm); }
 .btn-lg { padding: 0.9rem 2rem; font-size: 1rem; }
 .btn-full { width: 100%; }
 
-/* Cards */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -127,9 +106,8 @@ h1, h2, h3, .font-display {
   box-shadow: var(--shadow-sm);
 }
 .card-hover { transition: all 0.25s ease; }
-.card-hover:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--border-strong); }
+.card-hover:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: var(--border-strong); }
 
-/* Inputs */
 .input {
   width: 100%;
   background: var(--surface);
@@ -143,11 +121,11 @@ h1, h2, h3, .font-display {
 .input::placeholder { color: var(--text-muted); }
 .input:focus {
   outline: none;
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px var(--brand-soft);
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px var(--surface-soft);
 }
 .input-error { border-color: var(--danger); }
-.input-error:focus { box-shadow: 0 0 0 3px var(--danger-soft); }
+.input-error:focus { box-shadow: 0 0 0 2px var(--danger-soft); }
 
 .label {
   display: block;
@@ -157,7 +135,6 @@ h1, h2, h3, .font-display {
   margin-bottom: 0.4rem;
 }
 
-/* Badges */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -173,23 +150,20 @@ h1, h2, h3, .font-display {
 .badge-brand { background: var(--brand-soft); color: var(--brand); }
 .badge-neutral { background: var(--surface-soft); color: var(--text-secondary); }
 
-/* Headings */
-.heading-xl { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 600; line-height: 1.1; }
-.heading-lg { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 600; line-height: 1.2; }
-.heading-md { font-size: 1.25rem; font-weight: 600; }
+.heading-xl { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.05; letter-spacing: -0.03em; }
+.heading-lg { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; line-height: 1.2; }
+.heading-md { font-size: 1.25rem; font-weight: 700; }
 .eyebrow {
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--brand);
+  color: var(--text-muted);
 }
 
-/* Section spacing */
 .section { padding-block: 4rem; }
 @media (min-width: 768px) { .section { padding-block: 5.5rem; } }
 
-/* Tables */
 .table th {
   text-align: left;
   font-size: 0.72rem;
@@ -202,11 +176,16 @@ h1, h2, h3, .font-display {
 }
 .table td { padding: 0.9rem 1rem; font-size: 0.88rem; border-top: 1px solid var(--border); }
 
-/* Links */
-.link { color: var(--brand); font-weight: 600; transition: color 0.2s; }
-.link:hover { color: var(--brand-hover); text-decoration: underline; }
+.link { color: var(--text-primary); font-weight: 600; transition: color 0.2s; }
+.link:hover { text-decoration: underline; }
 
-/* Hover buttons (for server components - no JS event handlers) */
+@keyframes cart-bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.cart-bump { animation: cart-bump 0.55s cubic-bezier(0.3, 1.6, 0.4, 1); }
+
 .btn-white {
   display: inline-flex;
   align-items: center;

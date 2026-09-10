@@ -14,10 +14,10 @@ export default function AnnouncementBar() {
       <div className="container-page flex items-center justify-center h-9">
         <div className="hidden md:flex items-center gap-6">
           {messages.map((msg, i) => (
-            <span key={i} className="flex items-center gap-3 text-xs font-medium" style={{ color: "#d6d3d1" }}>
+            <span key={i} className="flex items-center gap-3 text-xs font-medium" style={{ color: "#ffffff" }}>
               <span>{msg}</span>
               {i < messages.length - 1 && (
-                <span style={{ color: "var(--brand)" }}>•</span>
+                <span style={{ color: "#ffffff" }}>•</span>
               )}
             </span>
           ))}
@@ -25,9 +25,9 @@ export default function AnnouncementBar() {
 
         <div className="md:hidden flex items-center gap-4 animate-[scroll_20s_linear_infinite] whitespace-nowrap">
           {[...messages, ...messages].map((msg, i) => (
-            <span key={i} className="flex items-center gap-3 text-xs font-medium" style={{ color: "#d6d3d1" }}>
+            <span key={i} className="flex items-center gap-3 text-xs font-medium" style={{ color: "#ffffff" }}>
               <span>{msg}</span>
-              <span style={{ color: "var(--brand)" }}>•</span>
+              <span style={{ color: "#ffffff" }}>•</span>
             </span>
           ))}
         </div>

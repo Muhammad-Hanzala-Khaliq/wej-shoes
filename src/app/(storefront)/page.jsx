@@ -89,21 +89,6 @@ async function getNewArrivals() {
   });
 }
 
-async function getGenderImage(gender) {
-  const product = await prisma.product.findFirst({
-    where: { status: "ACTIVE", deletedAt: null, category: { gender } },
-    include: {
-      images: {
-        where: { isPrimary: true },
-        take: 1,
-        select: { imageUrl: true },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
-  return product?.images?.[0]?.imageUrl || null;
-}
-
 export const metadata = {
   title: "WEJ Shoes - Premium Footwear for Men, Women & Kids",
   description:
@@ -116,15 +101,11 @@ export default async function HomePage() {
     categories,
     featuredProducts,
     newArrivals,
-    menImage,
-    womenImage,
   ] = await Promise.all([
     getHeroContent(),
     getCategories(),
     getFeaturedProducts(),
     getNewArrivals(),
-    getGenderImage("MEN"),
-    getGenderImage("WOMEN"),
   ]);
 
   const serializedFeatured = serializeDecimal(featuredProducts);
@@ -207,7 +188,7 @@ export default async function HomePage() {
       </section>
 
       {/* SECTION 3: PREMIUM (Featured Products) */}
-      <section style={{ background: "var(--surface-soft)" }}>
+      <section>
         <div className="container-page section">
           <h2
             className="heading-lg mb-10 text-center"
@@ -231,39 +212,25 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 4: MEN & WOMEN SPLIT - BEYOND TRENDS */}
-      <section className="relative">
-        <div className="grid grid-cols-1 md:grid-cols-2">
+      {/* SECTION 4: BEYOND TRENDS */}
+      <section className="relative h-[calc(100svh-4rem)] min-h-[480px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 h-full">
           {/* Men */}
-          <div className="relative h-[420px] md:h-[560px] overflow-hidden">
-            {menImage ? (
-              <img
-                src={menImage}
-                alt="Men's Collection"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div
-                className="w-full h-full"
-                style={{ background: "var(--surface-soft)" }}
-              />
-            )}
+          <div className="relative overflow-hidden">
+            <img
+              src="/beyond-the-trend-1.jpg"
+              alt="Men's Collection"
+              className="w-full h-full object-cover"
+            />
           </div>
 
           {/* Women */}
-          <div className="relative h-[420px] md:h-[560px] overflow-hidden">
-            {womenImage ? (
-              <img
-                src={womenImage}
-                alt="Women's Collection"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div
-                className="w-full h-full"
-                style={{ background: "var(--surface-soft)" }}
-              />
-            )}
+          <div className="relative overflow-hidden">
+            <img
+              src="/beyond-the-trend-2.jpg"
+              alt="Women's Collection"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
 

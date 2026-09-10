@@ -204,7 +204,7 @@ export default function ProductCard({ product, clean = false }) {
             <button
               onClick={handleOverflowClick}
               className="min-w-[28px] h-7 px-1.5 text-xs flex items-center justify-center rounded-full shrink-0 cursor-pointer"
-              style={{ background: "#f3f4f6", color: "#4b5563" }}
+              style={{ background: "var(--surface-soft)", color: "var(--text-secondary)" }}
             >
               +{overflowCount}
             </button>
@@ -354,7 +354,7 @@ export default function ProductCard({ product, clean = false }) {
               <button
                 onClick={handleOverflowClick}
                 className="min-w-[28px] h-7 px-1.5 text-xs flex items-center justify-center rounded-full shrink-0 cursor-pointer"
-                style={{ background: "#f3f4f6", color: "#4b5563" }}
+                style={{ background: "var(--surface-soft)", color: "var(--text-secondary)" }}
               >
                 +{overflowCount}
               </button>

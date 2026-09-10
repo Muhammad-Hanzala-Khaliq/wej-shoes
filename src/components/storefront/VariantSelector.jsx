@@ -69,7 +69,7 @@ export default function VariantSelector({ variants = [], selectedVariant, onSele
                 className="flex items-center justify-center w-14 h-14 rounded-lg text-[11px] font-medium transition-all duration-200"
                 style={{
                   background: "#f2f2f2",
-                  border: isSelected ? "2px solid #1a1714" : "2px solid transparent",
+                  border: isSelected ? "2px solid #000000" : "2px solid transparent",
                   opacity: hasStock ? 1 : 0.4,
                   textDecoration: hasStock && !isSelected ? "none" : hasStock ? "none" : "line-through",
                   color: "var(--text-primary)",
