@@ -140,9 +140,6 @@ export default function CategoriesPage() {
                     Gender
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Products
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -183,9 +180,6 @@ export default function CategoriesPage() {
                       >
                         {category.gender}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {category._count?.products || 0}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span

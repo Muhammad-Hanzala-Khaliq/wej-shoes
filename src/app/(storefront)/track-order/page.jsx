@@ -1,14 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 
 export default function TrackOrderPage() {
-  const [orderNumber, setOrderNumber] = useState("");
+  const searchParams = useSearchParams();
+  const phoneInputRef = useRef(null);
+
+  const [orderNumber, setOrderNumber] = useState(searchParams.get("order") || "");
   const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [order, setOrder] = useState(null);
+
+  const isPreFilled = !!searchParams.get("order");
+
+  useEffect(() => {
+    if (orderNumber && phoneInputRef.current) {
+      phoneInputRef.current.focus();
+    }
+  }, [orderNumber]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -86,12 +98,16 @@ export default function TrackOrderPage() {
               Phone Number
             </label>
             <input
+              ref={phoneInputRef}
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="03XXXXXXXXX"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
             />
+            {isPreFilled && (
+              <p className="text-xs text-green-600 mt-1">✓ Order number loaded - now enter your phone number</p>
+            )}
           </div>
 
           {error && (

@@ -81,6 +81,23 @@ export default async function OrderConfirmationPage({ params }) {
         )}
       </div>
 
+      {/* How to Track */}
+      <div className="card p-6 bg-gray-50 border-gray-200 mt-6">
+        <h3 className="heading-md mb-3">How to Track Your Order</h3>
+        <ol className="space-y-2 text-sm text-gray-700 list-decimal list-inside mb-4">
+          <li>Save your order number: <span className="font-mono font-bold text-black">{order.orderNumber}</span></li>
+          <li>Go to the <span className="font-semibold">Track Order</span> page (link in footer)</li>
+          <li>Enter your order number + phone number (<span className="font-semibold">{order.customerPhone}</span>)</li>
+          <li>View your live order status anytime - no login needed</li>
+        </ol>
+        <Link
+          href={`/track-order?order=${encodeURIComponent(order.orderNumber)}`}
+          className="btn btn-primary"
+        >
+          Track This Order →
+        </Link>
+      </div>
+
       {/* Order Items */}
       <div className="bg-white rounded-lg border border-gray-100 p-6 mb-6">
         <h2 className="text-lg font-semibold mb-4">Order Items</h2>
