@@ -46,6 +46,7 @@ model Address {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("addresses")
 }
 
@@ -68,6 +69,8 @@ model Category {
   products Product[]
 
   @@index([slug])
+  @@index([gender])
+  @@index([parentId])
   @@map("categories")
 }
 
@@ -95,6 +98,8 @@ model Product {
 
   @@index([slug])
   @@index([categoryId])
+  @@index([status, deletedAt])
+  @@index([isFeatured])
   @@map("products")
 }
 
@@ -229,6 +234,7 @@ model Order {
 
   @@index([orderNumber])
   @@index([userId])
+  @@index([orderStatus, createdAt])
   @@map("orders")
 }
 
@@ -334,5 +340,6 @@ model PasswordResetToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([tokenHash])
   @@map("password_reset_tokens")
 }

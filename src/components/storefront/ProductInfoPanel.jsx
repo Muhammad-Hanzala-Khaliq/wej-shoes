@@ -4,10 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AddToCartButton from "@/components/storefront/AddToCartButton";
 import { addRecentlyViewed } from "@/lib/recently-viewed";
-
-function formatPrice(price) {
-  return `PKR ${Number(price).toLocaleString("en-PK")}`;
-}
+import { formatPrice } from "@/lib/utils";
 
 export default function ProductInfoPanel({ product, variants, initialVariantId }) {
   const router = useRouter();
@@ -117,11 +114,11 @@ export default function ProductInfoPanel({ product, variants, initialVariantId }
           aria-label="Add to wishlist"
         >
           {wishlist ? (
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#000000" stroke="#000000" strokeWidth="2">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="var(--ink)" stroke="var(--ink)" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           ) : (
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="2">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           )}
@@ -179,9 +176,9 @@ export default function ProductInfoPanel({ product, variants, initialVariantId }
                 disabled={!available}
                 className="flex items-center justify-center w-14 h-14 rounded-lg text-sm font-medium transition-all duration-200"
                 style={{
-                  background: selected ? "#000000" : "#f2f2f2",
-                  color: selected ? "#ffffff" : "var(--text-primary)",
-                  border: selected ? "2px solid #000000" : "2px solid transparent",
+                  background: selected ? "var(--ink)" : "var(--surface-soft)",
+                  color: selected ? "var(--bg)" : "var(--text-primary)",
+                  border: selected ? "2px solid var(--ink)" : "2px solid transparent",
                   opacity: available ? 1 : 0.4,
                   textDecoration: available ? "none" : "line-through",
                 }}
@@ -212,28 +209,28 @@ export default function ProductInfoPanel({ product, variants, initialVariantId }
         onClick={handleBuyNow}
         disabled={!selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow}
         className="w-full h-10 rounded-full font-semibold text-sm transition-colors"
-        style={{
-          background: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
-            ? "#e5e5e5"
-            : "#ffffff",
-          color: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
-            ? "#a3a3a3"
-            : "#000000",
-          border: "1px solid #000000",
+          style={{
+            background: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
+              ? "var(--border)"
+              : "var(--bg)",
+            color: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
+              ? "var(--text-muted)"
+              : "var(--ink)",
+            border: "1px solid var(--ink)",
           cursor: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
             ? "not-allowed"
             : "pointer",
         }}
         onMouseEnter={(e) => {
           if (selectedVariant && selectedVariant.stockQuantity > 0 && !isBuyingNow) {
-            e.target.style.background = "#000000";
-            e.target.style.color = "#ffffff";
+            e.target.style.background = "var(--ink)";
+            e.target.style.color = "var(--bg)";
           }
         }}
         onMouseLeave={(e) => {
           if (selectedVariant && selectedVariant.stockQuantity > 0 && !isBuyingNow) {
-            e.target.style.background = "#ffffff";
-            e.target.style.color = "#000000";
+            e.target.style.background = "var(--bg)";
+            e.target.style.color = "var(--ink)";
           }
         }}
       >

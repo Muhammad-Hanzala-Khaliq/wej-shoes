@@ -10,7 +10,7 @@ import { generateSlug } from "@/lib/utils";
  * @returns {Promise<Array>} List of categories
  */
 export async function getCategories(options = {}) {
-  const { status = "ACTIVE", gender, includeDeleted = false } = options;
+  const { status = "ACTIVE", gender, includeDeleted = false, limit = 100, page = 1 } = options;
 
   const where = {};
 
@@ -26,20 +26,27 @@ export async function getCategories(options = {}) {
     where.gender = gender;
   }
 
-  const categories = await prisma.category.findMany({
-    where,
-    include: {
-      parent: {
-        select: { id: true, name: true, slug: true },
-      },
-      _count: {
-        select: { products: true },
-      },
-    },
-    orderBy: { name: "asc" },
-  });
+  const skip = (page - 1) * limit;
 
-  return categories;
+  const [categories, total] = await Promise.all([
+    prisma.category.findMany({
+      where,
+      include: {
+        parent: {
+          select: { id: true, name: true, slug: true },
+        },
+        _count: {
+          select: { products: true },
+        },
+      },
+      orderBy: { name: "asc" },
+      skip,
+      take: limit,
+    }),
+    prisma.category.count({ where }),
+  ]);
+
+  return { categories, total, page, totalPages: Math.ceil(total / limit) };
 }
 
 /**
@@ -57,10 +64,12 @@ export async function getMenuCategories() {
       children: {
         where: { status: "ACTIVE", deletedAt: null },
         orderBy: { name: "asc" },
+        take: 50,
         select: { id: true, name: true, slug: true, gender: true },
       },
     },
     orderBy: [{ gender: "asc" }, { name: "asc" }],
+    take: 10,
   });
 
   return parents;

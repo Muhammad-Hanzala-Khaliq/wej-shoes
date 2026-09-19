@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { getSessionId } from "@/lib/utils";
+import { getCart, addToCart as apiAddToCart, updateCartItem, removeCartItem, clearCart as apiClearCart, mergeCart as apiMergeCart } from "@/lib/api/cart";
+import { logError } from "@/lib/logger";
 
 const CartContext = createContext(null);
 
@@ -42,9 +44,8 @@ export default function CartProvider({ children }) {
     let cancelled = false;
     async function load() {
       try {
-        const response = await fetch("/api/cart");
-        const data = await response.json();
-        if (!cancelled && response.ok) {
+        const data = await getCart();
+        if (!cancelled) {
           setCart(data);
         }
       } catch {
@@ -59,9 +60,8 @@ export default function CartProvider({ children }) {
 
   const refreshCart = useCallback(async () => {
     try {
-      const response = await fetch("/api/cart");
-      const data = await response.json();
-      if (response.ok) setCart(data);
+      const data = await getCart();
+      setCart(data);
     } catch {
       // ignore
     }
@@ -83,6 +83,8 @@ export default function CartProvider({ children }) {
   const addToCart = useCallback(async (variantId, quantity = 1, snapshot = null) => {
     try {
       setError(null);
+
+      const previous = cartRef.current;
 
       // Optimistic update if snapshot provided
       if (snapshot) {
@@ -134,17 +136,7 @@ export default function CartProvider({ children }) {
       // Create the server promise and store it
       const p = (async () => {
         try {
-          const response = await fetch("/api/cart", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ variantId, quantity }),
-          });
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.error || "Failed to add to cart");
-          }
+          const data = await apiAddToCart({ variantId, quantity });
 
           // Consume any queued intent for this variant before setting cart
           const intent = takeIntent(variantId);
@@ -154,13 +146,15 @@ export default function CartProvider({ children }) {
             if (realItem) {
               setCart(recompute((data.items || []).filter((i) => i.id !== realItem.id)));
               // Delete on server in background
-              fetch(`/api/cart/${realItem.id}`, { method: "DELETE" })
-                .then((r) => r.json())
+              removeCartItem(realItem.id)
                 .then((d) => {
                   if (d && d.cart) setCart(d.cart);
                   else if (d && d.items) setCart(recompute(d.items));
                 })
-                .catch(() => refreshCart());
+                .catch((err) => {
+                  logError("cart:backgroundRemove", err, { itemId: realItem.id });
+                  refreshCart();
+                });
             } else {
               setCart(recompute(data.items || []));
             }
@@ -174,16 +168,14 @@ export default function CartProvider({ children }) {
               };
               setCart(recompute((data.items || []).map((i) => (i.id === realItem.id ? updated : i))));
               // Update on server in background
-              fetch(`/api/cart/${realItem.id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ quantity: intent.qty }),
-              })
-                .then((r) => r.json())
+              updateCartItem(realItem.id, intent.qty)
                 .then((d) => {
                   if (d && d.items) setCart(recompute(d.items));
                 })
-                .catch(() => refreshCart());
+                .catch((err) => {
+                  logError("cart:backgroundUpdate", err, { itemId: realItem.id, qty: intent.qty });
+                  refreshCart();
+                });
             } else {
               setCart(recompute(data.items || []));
             }
@@ -194,8 +186,9 @@ export default function CartProvider({ children }) {
           return { success: true };
         } catch (err) {
           takeIntent(variantId);
+          setCart(previous);
           setError(err.message);
-          refreshCart();
+          logError("cart:addToCart", err, { variantId, quantity });
           return { success: false, error: err.message };
         } finally {
           delete pendingAddsRef.current[variantId];
@@ -205,8 +198,9 @@ export default function CartProvider({ children }) {
       pendingAddsRef.current[variantId] = p;
       return p;
     } catch (err) {
-      refreshCart();
+      setCart(previous);
       setError(err.message);
+      logError("cart:addToCart", err, { variantId, quantity });
       return { success: false, error: err.message };
     }
   }, [refreshCart, takeIntent]);
@@ -236,15 +230,7 @@ export default function CartProvider({ children }) {
     try {
       setError(null);
 
-      const response = await fetch(`/api/cart/${itemId}`, {
-        method: "DELETE",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to remove item");
-      }
+      const data = await removeCartItem(itemId);
 
       setCart(recompute(data.cart?.items || data.items || []));
       return { success: true };
@@ -292,17 +278,7 @@ export default function CartProvider({ children }) {
     try {
       setError(null);
 
-      const response = await fetch(`/api/cart/${itemId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ quantity }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update cart");
-      }
+      const data = await updateCartItem(itemId, quantity);
 
       setCart(recompute(data.items || []));
       return { success: true };
@@ -314,30 +290,25 @@ export default function CartProvider({ children }) {
   }, [removeItem, setIntent]);
 
   const clearCart = useCallback(async () => {
+    const previous = cartRef.current;
+
     setCart({ items: [], subtotal: 0, itemCount: 0, cartId: null });
 
     try {
-      await fetch("/api/cart", { method: "DELETE" });
+      await apiClearCart();
+      return { success: true };
     } catch (err) {
-      console.error("Cart clear sync failed:", err);
+      setCart(previous);
+      logError("cart:clearCart", err);
+      return { success: false };
     }
-
-    return { success: true };
   }, []);
 
   const mergeCart = useCallback(async () => {
     try {
       setError(null);
 
-      const response = await fetch("/api/cart/merge", {
-        method: "POST",
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to merge cart");
-      }
+      const data = await apiMergeCart();
 
       setCart(data);
       return { success: true };

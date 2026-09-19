@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getCategories, createCategory } from "@/features/catalog/category.service";
+import { logError } from "@/lib/logger";
 
 /**
- * GET handler - Fetch all categories
+ * GET handler - Fetch all categories with pagination
+ * @param {Request} request
  * @returns {NextResponse}
  */
-export async function GET() {
+export async function GET(request) {
   try {
     const session = await requireAdmin();
 
@@ -14,11 +16,15 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const categories = await getCategories({ status: null });
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
 
-    return NextResponse.json({ categories });
+    const result = await getCategories({ status: null, limit, page });
+
+    return NextResponse.json(result);
   } catch (error) {
-    console.error("GET /api/admin/categories error:", error);
+    logError("/api/admin/categories", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -52,7 +58,7 @@ export async function POST(request) {
 
     return NextResponse.json({ category }, { status: 201 });
   } catch (error) {
-    console.error("POST /api/admin/categories error:", error);
+    logError("/api/admin/categories POST", error);
 
     if (error.message.includes("already exists")) {
       return NextResponse.json({ error: error.message }, { status: 409 });

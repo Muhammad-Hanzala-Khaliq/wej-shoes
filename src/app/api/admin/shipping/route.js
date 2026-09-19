@@ -1,26 +1,32 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
-import { getShippingRules, updateShippingRule } from "@/features/cms/cms.service";
-import prisma from "@/lib/db";
+import { getShippingRules, createShippingRule, updateShippingRule, deleteShippingRule } from "@/features/cms/cms.service";
+import { logError } from "@/lib/logger";
 
 /**
- * GET handler - Get shipping rules (admin only)
+ * GET handler - Get shipping rules with pagination (admin only)
  */
-export async function GET() {
+export async function GET(request) {
   try {
     const session = await requireAdmin();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const rules = await getShippingRules();
-    return NextResponse.json(rules);
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+
+    const allRules = await getShippingRules();
+    const total = allRules.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const skip = (page - 1) * limit;
+    const items = allRules.slice(skip, skip + limit);
+
+    return NextResponse.json({ items, total, totalPages, page });
   } catch (error) {
-    console.error("GET /api/admin/shipping error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch shipping rules" },
-      { status: 500 }
-    );
+    logError("GET /api/admin/shipping", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -35,39 +41,16 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, type, amount, freeShippingThreshold, isActive } = body;
-
-    if (!name || !type || amount === undefined) {
-      return NextResponse.json(
-        { error: "name, type, and amount are required" },
-        { status: 400 }
-      );
-    }
-
-    if (!["FLAT", "WEIGHT", "FREE"].includes(type)) {
-      return NextResponse.json(
-        { error: "type must be FLAT, WEIGHT, or FREE" },
-        { status: 400 }
-      );
-    }
-
-    const rule = await prisma.shippingRule.create({
-      data: {
-        name,
-        type,
-        amount,
-        freeShippingThreshold: freeShippingThreshold ?? null,
-        isActive: isActive ?? true,
-      },
-    });
-
+    const rule = await createShippingRule(body);
     return NextResponse.json(rule, { status: 201 });
   } catch (error) {
-    console.error("POST /api/admin/shipping error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to create shipping rule" },
-      { status: 500 }
-    );
+    logError("POST /api/admin/shipping", error);
+
+    if (error.message === "name, type, and amount are required" || error.message === "type must be FLAT, WEIGHT, or FREE") {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -94,16 +77,13 @@ export async function PUT(request) {
     const rule = await updateShippingRule(id, data);
     return NextResponse.json(rule);
   } catch (error) {
-    console.error("PUT /api/admin/shipping error:", error);
+    logError("PUT /api/admin/shipping", error);
 
     if (error.message === "Shipping rule not found") {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
-    return NextResponse.json(
-      { error: error.message || "Failed to update shipping rule" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -127,19 +107,15 @@ export async function DELETE(request) {
       );
     }
 
-    const existing = await prisma.shippingRule.findUnique({ where: { id } });
-    if (!existing) {
-      return NextResponse.json({ error: "Shipping rule not found" }, { status: 404 });
+    const result = await deleteShippingRule(id);
+    return NextResponse.json(result);
+  } catch (error) {
+    logError("DELETE /api/admin/shipping", error);
+
+    if (error.message === "Shipping rule not found") {
+      return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
-    await prisma.shippingRule.delete({ where: { id } });
-
-    return NextResponse.json({ message: "Shipping rule deleted successfully" });
-  } catch (error) {
-    console.error("DELETE /api/admin/shipping error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to delete shipping rule" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

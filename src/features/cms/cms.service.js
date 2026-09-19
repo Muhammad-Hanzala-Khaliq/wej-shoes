@@ -160,7 +160,18 @@ export async function deleteHomepageContent(id) {
 }
 
 /**
- * Get all shipping rules (creates default if none exist)
+ * Get active shipping rules (public)
+ * @returns {Promise<Array>} Active shipping rules
+ */
+export async function getActiveShippingRules() {
+  return prisma.shippingRule.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+/**
+ * Get all shipping rules (admin, creates default if none exist)
  * @returns {Promise<Array>} Shipping rules
  */
 export async function getShippingRules() {
@@ -182,6 +193,55 @@ export async function getShippingRules() {
   }
 
   return rules;
+}
+
+/**
+ * Create a new shipping rule
+ * @param {Object} data
+ * @param {string} data.name
+ * @param {string} data.type - FLAT, WEIGHT, or FREE
+ * @param {number} data.amount
+ * @param {number} [data.freeShippingThreshold]
+ * @param {boolean} [data.isActive=true]
+ * @returns {Promise<Object>} Created rule
+ * @throws {Error} If validation fails
+ */
+export async function createShippingRule(data) {
+  const { name, type, amount, freeShippingThreshold, isActive } = data;
+
+  if (!name || !type || amount === undefined) {
+    throw new Error("name, type, and amount are required");
+  }
+
+  if (!["FLAT", "WEIGHT", "FREE"].includes(type)) {
+    throw new Error("type must be FLAT, WEIGHT, or FREE");
+  }
+
+  return prisma.shippingRule.create({
+    data: {
+      name,
+      type,
+      amount,
+      freeShippingThreshold: freeShippingThreshold ?? null,
+      isActive: isActive ?? true,
+    },
+  });
+}
+
+/**
+ * Delete a shipping rule
+ * @param {string} id
+ * @returns {Promise<Object>} Success message
+ * @throws {Error} If rule not found
+ */
+export async function deleteShippingRule(id) {
+  const existing = await prisma.shippingRule.findUnique({ where: { id } });
+  if (!existing) {
+    throw new Error("Shipping rule not found");
+  }
+
+  await prisma.shippingRule.delete({ where: { id } });
+  return { message: "Shipping rule deleted successfully" };
 }
 
 /**

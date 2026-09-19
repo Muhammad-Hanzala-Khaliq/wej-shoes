@@ -208,7 +208,7 @@ export async function getAvailableFilters(gender, categorySlug) {
       salePrice: true,
       variants: {
         where: { deletedAt: null },
-        select: { color: true, size: true },
+        select: { color: true, size: true, stockQuantity: true },
       },
     },
   });

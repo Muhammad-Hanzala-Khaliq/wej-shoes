@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { uploadImage } from "@/lib/api/admin/upload";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 5 * 1024 * 1024;
@@ -37,19 +38,7 @@ export default function ImageUploader({ images = [], onChange }) {
 
     try {
       const uploadPromises = validFiles.map(async (file) => {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await fetch("/api/admin/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || "Upload failed");
-        }
+        const data = await uploadImage(file);
 
         return {
           imageUrl: data.url,

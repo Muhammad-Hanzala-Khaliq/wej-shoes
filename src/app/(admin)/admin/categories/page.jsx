@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import Pagination from "@/components/admin/Pagination";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { useToast } from "@/components/admin/ToastProvider";
+import { listCategories, deleteCategory } from "@/lib/api/admin/categories";
+
+const PAGE_SIZE = 20;
 
 export default function CategoriesPage() {
   const searchParams = useSearchParams();
@@ -14,30 +18,29 @@ export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, categoryId: null, categoryName: "" });
   const [deletingId, setDeletingId] = useState(null);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async (p) => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/admin/categories");
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch categories");
-      }
-
+      const data = await listCategories({ page: p, limit: PAGE_SIZE });
       setCategories(data.categories);
+      setTotalPages(data.totalPages || 1);
+      setTotal(data.total || data.categories.length);
     } catch (err) {
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchCategories();
+    fetchCategories(page);
 
     const success = searchParams.get("success");
     if (success === "created") {
@@ -45,7 +48,7 @@ export default function CategoriesPage() {
     } else if (success === "updated") {
       showToast("Category updated successfully", "success");
     }
-  }, [searchParams, showToast]);
+  }, [page, searchParams, showToast, fetchCategories]);
 
   const handleDeleteClick = (id, name) => {
     setDeleteConfirm({ open: true, categoryId: id, categoryName: name });
@@ -55,21 +58,18 @@ export default function CategoriesPage() {
     const id = deleteConfirm.categoryId;
     if (!id) return;
 
+    const previousCategories = categories;
+
     setDeleteConfirm({ open: false, categoryId: null, categoryName: "" });
-    setDeletingId(id);
 
-    setTimeout(() => {
-      setCategories((prev) => prev.filter((cat) => cat.id !== id));
-      setDeletingId(null);
-    }, 300);
+    setCategories((prev) => prev.filter((cat) => cat.id !== id));
 
-    fetch(`/api/admin/categories/${id}`, { method: "DELETE" })
-      .then((res) => {
-        if (!res.ok) throw new Error("Delete failed");
+    deleteCategory(id)
+      .then(() => {
         showToast("Category deleted", "success");
       })
       .catch(() => {
-        fetchCategories();
+        setCategories(previousCategories);
         showToast("Failed to delete category", "error");
       });
   };
@@ -125,95 +125,100 @@ export default function CategoriesPage() {
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Slug
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Gender
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {categories.map((category) => (
-                  <tr
-                    key={category.id}
-                    className="hover:bg-gray-50 transition-all duration-300"
-                    style={{
-                      opacity: deletingId === category.id ? 0 : 1,
-                      transform: deletingId === category.id ? "scale(0.95)" : "scale(1)",
-                    }}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {category.name}
-                      </div>
-                      {category.parent && (
-                        <div className="text-xs text-gray-500">
-                          Parent: {category.parent.name}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm text-gray-500">{category.slug}</span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          category.gender === "MEN"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-pink-100 text-pink-800"
-                        }`}
-                      >
-                        {category.gender}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          category.status === "ACTIVE"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {category.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          href={`/admin/categories/${category.id}/edit`}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          onClick={() => handleDeleteClick(category.id, category.name)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
+        <>
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Slug
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Gender
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {categories.map((category) => (
+                    <tr
+                      key={category.id}
+                      className="hover:bg-gray-50 transition-all duration-300"
+                      style={{
+                        opacity: deletingId === category.id ? 0 : 1,
+                        transform: deletingId === category.id ? "scale(0.95)" : "scale(1)",
+                      }}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {category.name}
+                        </div>
+                        {category.parent && (
+                          <div className="text-xs text-gray-500">
+                            Parent: {category.parent.name}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-500">{category.slug}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            category.gender === "MEN"
+                              ? "bg-blue-100 text-blue-800"
+                              : category.gender === "KIDS"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-pink-100 text-pink-800"
+                          }`}
+                        >
+                          {category.gender}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            category.status === "ACTIVE"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {category.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            href={`/admin/categories/${category.id}/edit`}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteClick(category.id, category.name)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+          <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
+        </>
       )}
     </div>
   );

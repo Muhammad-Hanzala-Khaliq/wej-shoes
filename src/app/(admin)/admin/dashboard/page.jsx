@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { getDashboardStats } from "@/lib/api/admin/dashboard";
+import { formatPrice, formatDateTime } from "@/lib/utils";
 
 const STATUS_CLASSES = {
   PENDING: "badge badge-warning",
@@ -21,9 +23,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const res = await fetch("/api/admin/dashboard");
-        if (!res.ok) throw new Error("Failed to load dashboard");
-        const data = await res.json();
+        const data = await getDashboardStats();
         setStats(data);
       } catch (err) {
         setError(err.message);
@@ -33,17 +33,6 @@ export default function AdminDashboardPage() {
     }
     fetchStats();
   }, []);
-
-  const formatPrice = (amount) =>
-    `PKR ${Number(amount || 0).toLocaleString("en-PK")}`;
-
-  const formatDate = (date) =>
-    new Date(date).toLocaleDateString("en-PK", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
 
   if (isLoading) {
     return (
@@ -252,7 +241,7 @@ export default function AdminDashboardPage() {
                         </span>
                       </td>
                       <td style={{ color: "var(--text-muted)" }}>
-                        {formatDate(order.createdAt)}
+                        {formatDateTime(order.createdAt)}
                       </td>
                     </tr>
                   ))}

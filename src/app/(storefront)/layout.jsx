@@ -1,6 +1,7 @@
 import Header from "@/components/storefront/Header";
 import Footer from "@/components/storefront/Footer";
 import AnnouncementBar from "@/components/storefront/AnnouncementBar";
+import CookieBanner from "@/components/storefront/CookieBanner";
 
 export default function StorefrontLayout({ children }) {
   return (
@@ -9,6 +10,7 @@ export default function StorefrontLayout({ children }) {
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
+      <CookieBanner />
     </div>
   );
 }

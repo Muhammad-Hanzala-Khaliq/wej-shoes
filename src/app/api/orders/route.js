@@ -2,16 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { createOrder, getOrdersByUserId } from "@/features/orders/order.service";
-
-/**
- * Validate Pakistani phone number
- * @param {string} phone
- * @returns {boolean}
- */
-function isValidPakistaniPhone(phone) {
-  const cleaned = phone.replace(/[\s-]/g, "");
-  return /^(03[0-9]{2}-?[0-9]{7}|(\+92)3[0-9]{2}-?[0-9]{7})$/.test(cleaned);
-}
+import { logError } from "@/lib/logger";
+import { validatePhone } from "@/lib/utils";
 
 /**
  * POST handler - Create a new order
@@ -43,7 +35,7 @@ export async function POST(request) {
 
     if (!shippingAddress?.phone) {
       errors.phone = "Phone number is required";
-    } else if (!isValidPakistaniPhone(shippingAddress.phone)) {
+    } else if (!validatePhone(shippingAddress.phone)) {
       errors.phone = "Invalid Pakistani phone number (e.g., 03XXXXXXXXX)";
     }
 
@@ -81,7 +73,7 @@ export async function POST(request) {
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
-    console.error("POST /api/orders error:", error);
+    logError("POST /api/orders", error);
 
     if (error.message === "Cart is empty") {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -91,10 +83,7 @@ export async function POST(request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json(
-      { error: error.message || "Failed to create order" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -118,10 +107,7 @@ export async function GET(request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("GET /api/orders error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch orders" },
-      { status: 500 }
-    );
+    logError("GET /api/orders", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

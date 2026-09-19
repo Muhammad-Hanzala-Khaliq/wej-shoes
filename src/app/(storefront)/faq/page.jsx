@@ -1,6 +1,10 @@
-"use client";
+import Link from "next/link";
+import FaqAccordion from "@/components/storefront/FaqAccordion";
 
-import { useState } from "react";
+export const metadata = {
+  title: "FAQ | WEJ Shoes",
+  description: "Frequently asked questions about orders, payment, returns, and products at WEJ Shoes.",
+};
 
 const FAQ_DATA = [
   {
@@ -81,13 +85,6 @@ const FAQ_DATA = [
 ];
 
 export default function FAQPage() {
-  const [openItems, setOpenItems] = useState({});
-
-  const toggleItem = (category, index) => {
-    const key = `${category}-${index}`;
-    setOpenItems((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
   return (
     <div>
       <section className="bg-gray-900 text-white">
@@ -102,55 +99,7 @@ export default function FAQPage() {
       </section>
 
       <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        <div className="space-y-10">
-          {FAQ_DATA.map((category) => (
-            <div key={category.category}>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                {category.category}
-              </h2>
-              <div className="space-y-2">
-                {category.items.map((item, index) => {
-                  const isOpen = openItems[`${category.category}-${index}`];
-                  return (
-                    <div
-                      key={index}
-                      className="border border-gray-200 rounded-lg overflow-hidden"
-                    >
-                      <button
-                        onClick={() => toggleItem(category.category, index)}
-                        className="w-full flex items-center justify-between px-4 py-3 text-left bg-white hover:bg-gray-50 transition-colors"
-                      >
-                        <span className="font-medium text-gray-900 pr-4">
-                          {item.question}
-                        </span>
-                        <svg
-                          className={`w-5 h-5 text-gray-500 shrink-0 transition-transform duration-200 ${
-                            isOpen ? "rotate-180" : ""
-                          }`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
-                      </button>
-                      {isOpen && (
-                        <div className="px-4 pb-4 text-gray-600 border-t border-gray-100">
-                          <p className="pt-3">{item.answer}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+        <FaqAccordion faqData={FAQ_DATA} />
 
         <div className="mt-12 text-center">
           <p className="text-gray-600 mb-4">

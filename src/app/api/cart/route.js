@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { getCart, addToCart, clearCart } from "@/features/cart/cart.service";
+import { logError } from "@/lib/logger";
 
 function getSessionId(cookieStore) {
   return cookieStore.get("guest_session_id")?.value || null;
@@ -22,11 +23,8 @@ export async function GET() {
 
     return NextResponse.json(cart);
   } catch (error) {
-    console.error("GET /api/cart error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch cart" },
-      { status: 500 }
-    );
+    logError("GET /api/cart", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -63,7 +61,7 @@ export async function POST(request) {
 
     return NextResponse.json(cart);
   } catch (error) {
-    console.error("POST /api/cart error:", error);
+    logError("POST /api/cart", error);
 
     if (error.message === "Insufficient stock") {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -73,10 +71,7 @@ export async function POST(request) {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
-    return NextResponse.json(
-      { error: error.message || "Failed to add to cart" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -95,10 +90,7 @@ export async function DELETE() {
 
     return NextResponse.json(cart);
   } catch (error) {
-    console.error("DELETE /api/cart error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to clear cart" },
-      { status: 500 }
-    );
+    logError("DELETE /api/cart", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

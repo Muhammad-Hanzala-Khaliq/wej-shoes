@@ -6,10 +6,9 @@ import Link from "next/link";
 import Button from "@/components/ui/Button";
 import ConfirmDialog from "@/components/admin/ConfirmDialog";
 import { useToast } from "@/components/admin/ToastProvider";
-
-function formatPrice(price) {
-  return `PKR ${Number(price).toLocaleString("en-PK")}`;
-}
+import { listProducts, deleteProduct } from "@/lib/api/admin/products";
+import { listCategories } from "@/lib/api/admin/categories";
+import { formatPrice } from "@/lib/utils";
 
 function getCloudinaryThumb(url) {
   if (!url) return "";
@@ -52,20 +51,14 @@ export default function ProductsPage() {
       setIsLoading(true);
       setError("");
 
-      const params = new URLSearchParams();
-      params.set("page", pageNum.toString());
-      params.set("limit", "20");
-      if (search) params.set("search", search);
-      if (categoryId) params.set("categoryId", categoryId);
-      if (status) params.set("status", status);
-      if (gender) params.set("gender", gender);
-
-      const response = await fetch(`/api/admin/products?${params.toString()}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to fetch products");
-      }
+      const data = await listProducts({
+        page: pageNum,
+        limit: "20",
+        search,
+        categoryId,
+        status,
+        gender,
+      });
 
       setProducts(data.products);
       setTotal(data.total);
@@ -80,11 +73,8 @@ export default function ProductsPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch("/api/admin/categories");
-      const data = await response.json();
-      if (response.ok) {
-        setCategories(data.categories);
-      }
+      const data = await listCategories();
+      setCategories(data.categories);
     } catch (err) {
       console.error("Failed to fetch categories:", err);
     }
@@ -132,22 +122,21 @@ export default function ProductsPage() {
     const id = deleteConfirm.productId;
     if (!id) return;
 
+    const previousProducts = products;
+    const previousTotal = total;
+
     setDeleteConfirm({ open: false, productId: null, productName: "" });
-    setDeletingId(id);
 
-    setTimeout(() => {
-      setProducts((prev) => prev.filter((p) => p.id !== id));
-      setDeletingId(null);
-      setTotal((prev) => Math.max(0, prev - 1));
-    }, 300);
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+    setTotal((prev) => Math.max(0, prev - 1));
 
-    fetch(`/api/admin/products/${id}`, { method: "DELETE" })
-      .then((res) => {
-        if (!res.ok) throw new Error("Delete failed");
+    deleteProduct(id)
+      .then(() => {
         showToast("Product deleted", "success");
       })
       .catch(() => {
-        fetchProducts(page);
+        setProducts(previousProducts);
+        setTotal(previousTotal);
         showToast("Failed to delete product", "error");
       });
   };

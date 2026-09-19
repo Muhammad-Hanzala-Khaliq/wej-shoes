@@ -7,6 +7,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { GENDERS } from "@/lib/constants";
+import { getCategory, updateCategory, listCategories } from "@/lib/api/admin/categories";
 
 export default function EditCategoryPage() {
   const router = useRouter();
@@ -29,25 +30,15 @@ export default function EditCategoryPage() {
         setIsFetching(true);
         setFetchError("");
 
-        const [categoryRes, categoriesRes] = await Promise.all([
-          fetch(`/api/admin/categories/${id}`),
-          fetch("/api/admin/categories"),
+        const [categoryData, categoriesData] = await Promise.all([
+          getCategory(id),
+          listCategories(),
         ]);
 
-        if (!categoryRes.ok) {
-          const errData = await categoryRes.json().catch(() => ({}));
-          throw new Error(errData.error || "Category not found");
-        }
-
-        const categoryData = await categoryRes.json();
         setCategory(categoryData.category);
-
-        if (categoriesRes.ok) {
-          const categoriesData = await categoriesRes.json();
-          setParentCategories(
-            categoriesData.categories.filter((cat) => cat.id !== id)
-          );
-        }
+        setParentCategories(
+          categoriesData.categories.filter((cat) => cat.id !== id)
+        );
       } catch (err) {
         setFetchError(err.message);
       } finally {
@@ -93,24 +84,14 @@ export default function EditCategoryPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/admin/categories/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: category.name,
-          slug: category.slug || undefined,
-          gender: category.gender,
-          parentId: category.parentId || null,
-          status: category.status,
-          imageUrl: category.imageUrl || null,
-        }),
+      await updateCategory(id, {
+        name: category.name,
+        slug: category.slug || undefined,
+        gender: category.gender,
+        parentId: category.parentId || null,
+        status: category.status,
+        imageUrl: category.imageUrl || null,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update category");
-      }
 
       router.push("/admin/categories?success=updated");
     } catch (err) {

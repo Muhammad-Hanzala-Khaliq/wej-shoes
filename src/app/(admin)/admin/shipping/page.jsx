@@ -1,8 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import Pagination from "@/components/admin/Pagination";
+import {
+  getShippingRules,
+  createShippingRule,
+  updateShippingRule,
+  deleteShippingRule,
+} from "@/lib/api/admin/cms";
+
+const PAGE_SIZE = 20;
 
 const SHIPPING_TYPES = [
   { value: "FLAT", label: "Flat Rate" },
@@ -27,24 +36,27 @@ export default function AdminShippingPage() {
   const [form, setForm] = useState(emptyRule);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
-  useEffect(() => {
-    fetchRules();
-  }, []);
-
-  async function fetchRules() {
+  const fetchRules = useCallback(async (p) => {
     try {
-      const res = await fetch("/api/admin/shipping");
-      if (res.ok) {
-        const data = await res.json();
-        setRules(data);
-      }
+      const data = await getShippingRules({ page: p, limit: PAGE_SIZE });
+      const items = Array.isArray(data) ? data : data.items || data.rules || [];
+      setRules(items);
+      setTotalPages(data.totalPages || Math.max(1, Math.ceil((data.total || items.length) / PAGE_SIZE)));
+      setTotal(data.total || items.length);
     } catch {
       setMessage({ type: "error", text: "Failed to load shipping rules" });
     } finally {
       setIsLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    fetchRules(page);
+  }, [page, fetchRules]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -93,35 +105,15 @@ export default function AdminShippingPage() {
 
     try {
       if (editingRule) {
-        const res = await fetch(`/api/admin/shipping?id=${editingRule.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (res.ok) {
-          setMessage({ type: "success", text: "Rule updated" });
-          closeModal();
-          fetchRules();
-        } else {
-          const data = await res.json();
-          setMessage({ type: "error", text: data.error || "Failed to update" });
-        }
+        await updateShippingRule(editingRule.id, payload);
+        setMessage({ type: "success", text: "Rule updated" });
+        closeModal();
+        fetchRules(page);
       } else {
-        const res = await fetch("/api/admin/shipping", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (res.ok) {
-          setMessage({ type: "success", text: "Rule added" });
-          closeModal();
-          fetchRules();
-        } else {
-          const data = await res.json();
-          setMessage({ type: "error", text: data.error || "Failed to add" });
-        }
+        await createShippingRule(payload);
+        setMessage({ type: "success", text: "Rule added" });
+        closeModal();
+        fetchRules(page);
       }
     } catch {
       setMessage({ type: "error", text: "An error occurred" });
@@ -132,17 +124,10 @@ export default function AdminShippingPage() {
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`/api/admin/shipping?id=${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        setRules((prev) => prev.filter((r) => r.id !== id));
-        setDeleteConfirm(null);
-        setMessage({ type: "success", text: "Rule deleted" });
-      } else {
-        const data = await res.json();
-        setMessage({ type: "error", text: data.error || "Failed to delete" });
-      }
+      await deleteShippingRule(id);
+      setRules((prev) => prev.filter((r) => r.id !== id));
+      setDeleteConfirm(null);
+      setMessage({ type: "success", text: "Rule deleted" });
     } catch {
       setMessage({ type: "error", text: "Failed to delete" });
     }
@@ -150,7 +135,7 @@ export default function AdminShippingPage() {
 
   const formatAmount = (rule) => {
     if (rule.type === "FREE") return "PKR 0";
-    return `PKR ${(rule.amount || 0).toLocaleString()}`;
+    return `PKR ${(rule.amount || 0).toLocaleString("en-PK")}`;
   };
 
   if (isLoading) {
@@ -195,100 +180,103 @@ export default function AdminShippingPage() {
           </Button>
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Name</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Type</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Amount</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Free Threshold</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-500">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rules.map((rule) => (
-                  <tr key={rule.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <span className="font-medium text-gray-900">{rule.name}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                          rule.type === "FLAT"
-                            ? "bg-blue-100 text-blue-800"
-                            : rule.type === "WEIGHT"
-                              ? "bg-purple-100 text-purple-800"
-                              : "bg-green-100 text-green-800"
-                        }`}
-                      >
-                        {rule.type}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">{formatAmount(rule)}</td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {rule.freeShippingThreshold
-                        ? `PKR ${rule.freeShippingThreshold.toLocaleString()}`
-                        : "None"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                          rule.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
-                      >
-                        {rule.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => openEditModal(rule)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600"
-                          title="Edit"
+        <>
+          <div className="bg-white rounded-lg border border-gray-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Name</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Type</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Amount</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Free Threshold</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
+                    <th className="text-right px-4 py-3 font-medium text-gray-500">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rules.map((rule) => (
+                    <tr key={rule.id} className="border-b border-gray-50 hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <span className="font-medium text-gray-900">{rule.name}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            rule.type === "FLAT"
+                              ? "bg-blue-100 text-blue-800"
+                              : rule.type === "WEIGHT"
+                                ? "bg-purple-100 text-purple-800"
+                                : "bg-green-100 text-green-800"
+                          }`}
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        {deleteConfirm === rule.id ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleDelete(rule.id)}
-                              className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
-                            >
-                              Yes
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirm(null)}
-                              className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-                            >
-                              No
-                            </button>
-                          </div>
-                        ) : (
+                          {rule.type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">{formatAmount(rule)}</td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {rule.freeShippingThreshold
+                          ? `PKR ${rule.freeShippingThreshold.toLocaleString("en-PK")}`
+                          : "None"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            rule.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-500"
+                          }`}
+                        >
+                          {rule.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
                           <button
-                            onClick={() => setDeleteConfirm(rule.id)}
-                            className="p-1.5 text-gray-400 hover:text-red-600"
-                            title="Delete"
+                            onClick={() => openEditModal(rule)}
+                            className="p-1.5 text-gray-400 hover:text-blue-600"
+                            title="Edit"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                          {deleteConfirm === rule.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleDelete(rule.id)}
+                                className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                              >
+                                Yes
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm(null)}
+                                className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeleteConfirm(rule.id)}
+                              className="p-1.5 text-gray-400 hover:text-red-600"
+                              title="Delete"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+          <Pagination page={page} totalPages={totalPages} total={total} onPageChange={setPage} />
+        </>
       )}
 
       {/* Add/Edit Modal */}

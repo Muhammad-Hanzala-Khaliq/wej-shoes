@@ -7,6 +7,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import ImageUpload from "@/components/admin/ImageUpload";
 import { GENDERS } from "@/lib/constants";
+import { createCategory, listCategories } from "@/lib/api/admin/categories";
 
 /**
  * Add new category page
@@ -30,11 +31,8 @@ export default function AddCategoryPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("/api/admin/categories");
-        const data = await response.json();
-        if (response.ok) {
-          setParentCategories(data.categories);
-        }
+        const data = await listCategories();
+        setParentCategories(data.categories);
       } catch (err) {
         console.error("Failed to fetch categories:", err);
       }
@@ -78,24 +76,14 @@ export default function AddCategoryPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/admin/categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          slug: formData.slug || undefined,
-          gender: formData.gender,
-          parentId: formData.parentId || undefined,
-          status: formData.status,
-          imageUrl: formData.imageUrl || undefined,
-        }),
+      await createCategory({
+        name: formData.name,
+        slug: formData.slug || undefined,
+        gender: formData.gender,
+        parentId: formData.parentId || undefined,
+        status: formData.status,
+        imageUrl: formData.imageUrl || undefined,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create category");
-      }
 
       router.push("/admin/categories?success=created");
     } catch (err) {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { uploadToCloudinary } from "@/lib/cloudinary-upload";
+import { logError } from "@/lib/logger";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
@@ -53,10 +54,7 @@ export async function POST(request) {
       format: result.format,
     });
   } catch (error) {
-    console.error("POST /api/admin/upload error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+    logError("POST /api/admin/upload", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

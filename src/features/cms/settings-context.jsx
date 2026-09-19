@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
+import { getSettings } from "@/lib/api/settings";
 
 const SettingsContext = createContext({
   storeName: "WEJ Shoes",
@@ -28,22 +29,17 @@ export function SettingsProvider({ children }) {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const res = await fetch("/api/settings");
-        if (res.ok) {
-          const data = await res.json();
-          setSettings({
-            storeName: data.storeName || "WEJ Shoes",
-            logoUrl: data.logoUrl || "",
-            supportEmail: data.supportEmail || "",
-            phone: data.phone || "",
-            whatsappNumber: data.whatsappNumber || "",
-            currency: data.currency || "PKR",
-            codEnabled: data.codEnabled ?? true,
-            isLoading: false,
-          });
-        } else {
-          setSettings((prev) => ({ ...prev, isLoading: false }));
-        }
+        const data = await getSettings();
+        setSettings({
+          storeName: data.storeName || "WEJ Shoes",
+          logoUrl: data.logoUrl || "",
+          supportEmail: data.supportEmail || "",
+          phone: data.phone || "",
+          whatsappNumber: data.whatsappNumber || "",
+          currency: data.currency || "PKR",
+          codEnabled: data.codEnabled ?? true,
+          isLoading: false,
+        });
       } catch {
         setSettings((prev) => ({ ...prev, isLoading: false }));
       }

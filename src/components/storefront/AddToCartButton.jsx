@@ -108,20 +108,16 @@ export default function AddToCartButton({ variant, product, disabled }) {
               background: added
                 ? "var(--success)"
                 : isDisabled
-                  ? "#e5e5e5"
-                  : "#000000",
-              color: added
-                ? "#fff"
-                : isDisabled
-                  ? "#a3a3a3"
-                  : "#fff",
+                  ? "var(--border)"
+                  : "var(--ink)",
+              color: "#fff",
               cursor: isDisabled ? "not-allowed" : "pointer",
             }}
             onMouseEnter={(e) => {
-              if (!isDisabled && !added) e.target.style.background = "#262626";
+              if (!isDisabled && !added) e.target.style.background = "var(--ink-hover)";
             }}
             onMouseLeave={(e) => {
-              if (!isDisabled && !added) e.target.style.background = "#000000";
+              if (!isDisabled && !added) e.target.style.background = "var(--ink)";
             }}
           >
             {added ? "Added ✓" : "Add to cart"}
@@ -133,7 +129,7 @@ export default function AddToCartButton({ variant, product, disabled }) {
       {variant && variant.stockQuantity === 0 && (
         <div
           className="h-10 rounded-full flex items-center justify-center font-semibold text-sm"
-          style={{ background: "#e5e5e5", color: "#a3a3a3" }}
+          style={{ background: "var(--border)", color: "var(--text-muted)" }}
         >
           Out of stock
         </div>
@@ -143,7 +139,7 @@ export default function AddToCartButton({ variant, product, disabled }) {
       {!variant && (
         <div
           className="h-10 rounded-full flex items-center justify-center font-semibold text-sm"
-          style={{ background: "#e5e5e5", color: "#a3a3a3" }}
+          style={{ background: "var(--border)", color: "var(--text-muted)" }}
         >
           Add to cart
         </div>

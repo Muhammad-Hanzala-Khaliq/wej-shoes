@@ -5,6 +5,7 @@ import {
   updateProduct,
   deleteProduct,
 } from "@/features/catalog/product.service";
+import { logError } from "@/lib/logger";
 
 /**
  * GET handler - Fetch single product by id
@@ -30,7 +31,7 @@ export async function GET(request, { params }) {
 
     return NextResponse.json({ product });
   } catch (error) {
-    console.error("GET /api/admin/products/[id] error:", error);
+    logError("GET /api/admin/products/[id]", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -60,7 +61,7 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json({ product });
   } catch (error) {
-    console.error("PUT /api/admin/products/[id] error:", error);
+    logError("PUT /api/admin/products/[id]", error);
 
     if (error.message === "Product not found") {
       return NextResponse.json({ error: error.message }, { status: 404 });
@@ -71,7 +72,7 @@ export async function PUT(request, { params }) {
     }
 
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
@@ -97,14 +98,14 @@ export async function DELETE(request, { params }) {
 
     return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {
-    console.error("DELETE /api/admin/products/[id] error:", error);
+    logError("DELETE /api/admin/products/[id]", error);
 
     if (error.message === "Product not found") {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -1,7 +1,14 @@
 import Link from "next/link";
-import prisma from "@/lib/db";
 import ProductCard from "@/components/storefront/ProductCard";
 import CategoryCarousel from "@/components/storefront/CategoryCarousel";
+import {
+  getHeroContent,
+  getHomepageCategories,
+  getFeaturedProducts,
+  getNewArrivals,
+} from "@/features/cms/homepage.service";
+
+export const revalidate = 60;
 
 function serializeDecimal(data) {
   return JSON.parse(
@@ -23,72 +30,6 @@ function heroUrl(url, width) {
   return url.replace("/upload/", `/upload/w_${width},q_auto,f_auto/`);
 }
 
-async function getHeroContent() {
-  const hero = await prisma.homepageContent.findFirst({
-    where: { sectionType: "HERO", isActive: true },
-    orderBy: { sortOrder: "asc" },
-  });
-  return hero;
-}
-
-async function getCategories() {
-  return prisma.category.findMany({
-    where: { status: "ACTIVE", deletedAt: null, parentId: { not: null } },
-    include: {
-      products: {
-        where: { status: "ACTIVE", deletedAt: null },
-        take: 1,
-        select: {
-          images: {
-            where: { isPrimary: true },
-            take: 1,
-            select: { imageUrl: true },
-          },
-        },
-      },
-    },
-    orderBy: { name: "asc" },
-  });
-}
-
-async function getFeaturedProducts() {
-  return prisma.product.findMany({
-    where: { isFeatured: true, status: "ACTIVE", deletedAt: null },
-    include: {
-      images: {
-        orderBy: { sortOrder: "asc" },
-        select: { id: true, imageUrl: true, isPrimary: true },
-      },
-      category: { select: { name: true } },
-      variants: {
-        where: { deletedAt: null, status: "ACTIVE" },
-        select: { id: true, size: true, stockQuantity: true },
-      },
-    },
-    take: 4,
-    orderBy: { createdAt: "desc" },
-  });
-}
-
-async function getNewArrivals() {
-  return prisma.product.findMany({
-    where: { status: "ACTIVE", deletedAt: null },
-    include: {
-      images: {
-        orderBy: { sortOrder: "asc" },
-        select: { id: true, imageUrl: true, isPrimary: true },
-      },
-      category: { select: { name: true } },
-      variants: {
-        where: { deletedAt: null, status: "ACTIVE" },
-        select: { id: true, size: true, stockQuantity: true },
-      },
-    },
-    take: 8,
-    orderBy: { createdAt: "desc" },
-  });
-}
-
 export const metadata = {
   title: "WEJ Shoes - Premium Footwear for Men, Women & Kids",
   description:
@@ -96,28 +37,16 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-  const [
-    heroContent,
-    categories,
-    featuredProducts,
-    newArrivals,
-  ] = await Promise.all([
-    getHeroContent(),
-    getCategories(),
-    getFeaturedProducts(),
-    getNewArrivals(),
-  ]);
+  const [heroContent, childCategories, featuredProducts, newArrivals] =
+    await Promise.all([
+      getHeroContent(),
+      getHomepageCategories(),
+      getFeaturedProducts(),
+      getNewArrivals(),
+    ]);
 
   const serializedFeatured = serializeDecimal(featuredProducts);
   const serializedNew = serializeDecimal(newArrivals);
-
-  const childCategories = categories.map((cat) => ({
-    ...cat,
-    displayImage:
-      cat.imageUrl ||
-      cat.products?.[0]?.images?.[0]?.imageUrl ||
-      null,
-  }));
 
   const heroImageUrl = heroContent?.imageUrl || null;
   const heroTitle = heroContent?.title || "MAKE 'EM STARE.";
@@ -128,24 +57,19 @@ export default async function HomePage() {
   return (
     <div>
       {/* SECTION 1: HERO */}
-      <section className="relative w-full h-[calc(100svh-4rem)] min-h-[480px] overflow-hidden">
+      <section className="relative w-full h-[calc(100svh-4rem)] min-h-screen overflow-hidden">
         <div className="absolute inset-0">
-          {heroImageUrl ? (
-            <img
-              src={heroUrl(heroImageUrl, 1920)}
-              srcSet={[640, 1024, 1600, 2000].map((w) => `${heroUrl(heroImageUrl, w)} ${w}w`).join(", ")}
-              sizes="100vw"
-              alt={heroTitle}
-              className="absolute inset-0 w-full h-full object-cover object-center"
-              loading="eager"
-              fetchPriority="high"
-            />
-          ) : (
-            <div
-              className="w-full h-full"
-              style={{ background: "var(--surface-soft)" }}
-            />
-          )}
+          <img
+            src={heroUrl(heroImageUrl, 1920)}
+            srcSet={[640, 1024, 1600, 2000]
+              .map((w) => `${heroUrl(heroImageUrl, w)} ${w}w`)
+              .join(", ")}
+            sizes="100vw"
+            alt={heroTitle}
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            loading="eager"
+            fetchPriority="high"
+          />
 
           {/* Gradient overlay */}
           <div
@@ -213,7 +137,7 @@ export default async function HomePage() {
       </section>
 
       {/* SECTION 4: BEYOND TRENDS */}
-      <section className="relative h-[calc(100svh-4rem)] min-h-[480px]">
+      <section className="relative h-[calc(100svh-4rem)] min-h-screen">
         <div className="grid grid-cols-1 md:grid-cols-2 h-full">
           {/* Men */}
           <div className="relative overflow-hidden">

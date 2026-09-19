@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
+import { listOrders } from "@/lib/api/admin/orders";
 
 const STATUSES = ["", "PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "COMPLETED", "CANCELLED"];
 
@@ -19,16 +20,15 @@ export default function AdminOrdersPage() {
     async function fetchOrders() {
       setIsLoading(true);
       try {
-        const params = new URLSearchParams({ page, limit: "20" });
-        if (statusFilter) params.set("status", statusFilter);
-        if (search) params.set("search", search);
+        const data = await listOrders({
+          page,
+          limit: "20",
+          status: statusFilter,
+          search,
+        });
 
-        const res = await fetch(`/api/admin/orders?${params}`);
-        const data = await res.json();
-        if (res.ok) {
-          setOrders(data.orders);
-          setPagination(data.pagination);
-        }
+        setOrders(data.orders);
+        setPagination(data.pagination);
       } catch {
         // ignore
       } finally {

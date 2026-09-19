@@ -5,6 +5,7 @@ import {
   updateCategory,
   deleteCategory,
 } from "@/features/catalog/category.service";
+import { logError } from "@/lib/logger";
 
 /**
  * GET handler - Fetch single category by id
@@ -30,7 +31,7 @@ export async function GET(request, { params }) {
 
     return NextResponse.json({ category });
   } catch (error) {
-    console.error("GET /api/admin/categories/[id] error:", error);
+    logError("/api/admin/categories/[id]", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -59,7 +60,7 @@ export async function PUT(request, { params }) {
 
     return NextResponse.json({ category });
   } catch (error) {
-    console.error("PUT /api/admin/categories/[id] error:", error);
+    logError("/api/admin/categories/[id] PUT", error);
 
     if (error.message === "Category not found") {
       return NextResponse.json({ error: error.message }, { status: 404 });
@@ -70,8 +71,8 @@ export async function PUT(request, { params }) {
     }
 
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 400 }
+      { error: "Internal server error" },
+      { status: 500 }
     );
   }
 }
@@ -91,10 +92,10 @@ export async function DELETE(request, { params }) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("DELETE /api/admin/categories/[id] error:", error);
+    logError("/api/admin/categories/[id] DELETE", error);
     return NextResponse.json(
-      { error: error.message || "Failed to delete category" },
-      { status: 400 }
+      { error: "Internal server error" },
+      { status: 500 }
     );
   }
 }

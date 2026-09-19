@@ -23,9 +23,9 @@ export function ToastProvider({ children }) {
   );
 
   const borderColor = {
-    success: "#22c55e",
-    error: "#ef4444",
-    info: "#3b82f6",
+    success: "var(--success)",
+    error: "var(--danger)",
+    info: "var(--brand)",
   };
 
   return (

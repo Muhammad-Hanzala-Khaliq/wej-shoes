@@ -4,10 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/features/cart/CartProvider";
 import { flyToCart } from "@/lib/fly-to-cart";
-
-function formatPrice(price) {
-  return `PKR ${Number(price).toLocaleString("en-PK")}`;
-}
+import { formatPrice } from "@/lib/utils";
 
 export default function QuickAddModal({ product, open, onClose, initialSize }) {
   const router = useRouter();
@@ -231,7 +228,7 @@ export default function QuickAddModal({ product, open, onClose, initialSize }) {
                     color: !available
                       ? "var(--text-muted)"
                       : isSelected
-                        ? "#fff"
+                        ? "var(--bg)"
                         : "var(--text-primary)",
                     textDecoration: !available ? "line-through" : "none",
                     cursor: available ? "pointer" : "not-allowed",
@@ -277,7 +274,7 @@ export default function QuickAddModal({ product, open, onClose, initialSize }) {
               className="flex-1 h-10 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: added ? "var(--success)" : "var(--text-primary)",
-                color: "#fff",
+                color: "var(--bg)",
               }}
             >
               {added ? (
@@ -307,7 +304,7 @@ export default function QuickAddModal({ product, open, onClose, initialSize }) {
             className="mt-3 w-full h-10 rounded-lg font-medium text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               background: "var(--text-primary)",
-              color: "#fff",
+              color: "var(--bg)",
             }}
           >
             Buy it now

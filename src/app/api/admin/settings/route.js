@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getStoreSettings, updateStoreSettings } from "@/features/cms/cms.service";
+import { logError } from "@/lib/logger";
 
 /**
  * GET handler - Get store settings (admin only)
@@ -15,11 +16,8 @@ export async function GET() {
     const settings = await getStoreSettings();
     return NextResponse.json(settings);
   } catch (error) {
-    console.error("GET /api/admin/settings error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch settings" },
-      { status: 500 }
-    );
+    logError("GET /api/admin/settings", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -37,10 +35,7 @@ export async function PUT(request) {
     const settings = await updateStoreSettings(body);
     return NextResponse.json(settings);
   } catch (error) {
-    console.error("PUT /api/admin/settings error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to update settings" },
-      { status: 500 }
-    );
+    logError("PUT /api/admin/settings", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

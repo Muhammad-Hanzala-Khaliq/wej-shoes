@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import ProductCard from "./ProductCard";
+import { formatPrice } from "@/lib/utils";
 
 function LoadingSkeleton({ viewMode }) {
   if (viewMode === "list") {
@@ -57,10 +58,6 @@ function EmptyState() {
   );
 }
 
-function formatPrice(price) {
-  return `PKR ${Number(price).toLocaleString("en-PK")}`;
-}
-
 function ProductListItem({ product }) {
   const images = product.images || [];
   const primaryImage = images.find((img) => img.isPrimary) || images[0];
@@ -73,7 +70,7 @@ function ProductListItem({ product }) {
     <Link href={`/product/${product.slug}`} className="group flex gap-6">
       <div
         className="w-40 h-40 md:w-56 md:h-56 flex-shrink-0 overflow-hidden"
-        style={{ background: "#f2f2f2" }}
+        style={{ background: "var(--surface-soft)" }}
       >
         {primaryImage ? (
           <img

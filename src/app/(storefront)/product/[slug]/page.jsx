@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductBySlug } from "@/features/catalog/product.service";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
+import { logError } from "@/lib/logger";
 import ProductGallery from "@/components/storefront/ProductGallery";
 import RelatedProducts from "@/components/storefront/RelatedProducts";
 import ProductInfoPanel from "@/components/storefront/ProductInfoPanel";
@@ -22,6 +23,7 @@ function serialize(data) {
       })
     );
   } catch (error) {
+    logError("product:serialize", error, { slug: "unknown" });
     return null;
   }
 }
@@ -54,6 +56,7 @@ export async function generateMetadata({ params }) {
       },
     };
   } catch (error) {
+    logError("product:generateMetadata", error, { slug });
     return { title: "Product | WEJ Shoes" };
   }
 }
@@ -83,9 +86,37 @@ export default async function ProductPage({ params, searchParams }) {
       : img.imageUrl,
   }));
 
+  const price = variants[0]?.salePrice
+    ? Number(variants[0].salePrice)
+    : Number(product.regularPrice);
+  const inStock = variants.some((v) => v.stockQuantity > 0);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.description || `Shop ${product.name} at WEJ Shoes`,
+    image: images.slice(0, 3).map((img) => img.imageUrl),
+    brand: { "@type": "Brand", name: "WEJ Shoes" },
+    category: product.category?.name,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "PKR",
+      price,
+      availability: inStock
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+    },
+  };
+
   return (
-    <div className="container-page py-8 md:py-12">
-      {/* Breadcrumb */}
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="container-page py-8 md:py-12">
+        {/* Breadcrumb */}
       <nav className="text-xs mb-6 md:mb-8" style={{ color: "var(--text-muted)" }}>
         <Link href="/" className="link" style={{ color: "var(--text-muted)" }}>
           Home
@@ -131,5 +162,6 @@ export default async function ProductPage({ params, searchParams }) {
         />
       </div>
     </div>
+    </>
   );
 }

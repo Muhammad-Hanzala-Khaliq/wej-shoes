@@ -1,23 +1,33 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getAllHomepageContent, createHomepageContent, reorderHomepageContent } from "@/features/cms/cms.service";
+import { logError } from "@/lib/logger";
 
 /**
- * GET handler - Get all homepage content (admin only)
+ * GET handler - Get homepage content with pagination (admin only)
  */
-export async function GET() {
+export async function GET(request) {
   try {
     const session = await requireAdmin();
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const content = await getAllHomepageContent();
-    return NextResponse.json(content);
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
+
+    const all = await getAllHomepageContent();
+    const total = all.length;
+    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const skip = (page - 1) * limit;
+    const items = all.slice(skip, skip + limit);
+
+    return NextResponse.json({ items, total, totalPages, page });
   } catch (error) {
-    console.error("GET /api/admin/homepage error:", error);
+    logError("GET /api/admin/homepage", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch homepage content" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
@@ -45,9 +55,9 @@ export async function POST(request) {
     const content = await createHomepageContent(body);
     return NextResponse.json(content, { status: 201 });
   } catch (error) {
-    console.error("POST /api/admin/homepage error:", error);
+    logError("POST /api/admin/homepage", error);
     return NextResponse.json(
-      { error: error.message || "Failed to create content" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
@@ -77,9 +87,9 @@ export async function PUT(request) {
     const content = await reorderHomepageContent(body.order);
     return NextResponse.json(content);
   } catch (error) {
-    console.error("PUT /api/admin/homepage reorder error:", error);
+    logError("PUT /api/admin/homepage", error);
     return NextResponse.json(
-      { error: error.message || "Failed to reorder content" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

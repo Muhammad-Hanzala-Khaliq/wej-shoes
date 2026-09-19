@@ -4,6 +4,13 @@ import { useState, useEffect } from "react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import ImageUpload from "@/components/admin/ImageUpload";
+import {
+  getHomepage,
+  createHomepageBlock,
+  updateHomepageBlock,
+  deleteHomepageBlock,
+  reorderHomepageBlocks,
+} from "@/lib/api/admin/cms";
 
 const SECTION_TYPES = [
   { value: "HERO", label: "Hero Banner" },
@@ -39,11 +46,8 @@ export default function AdminHomepagePage() {
 
   async function fetchBlocks() {
     try {
-      const res = await fetch("/api/admin/homepage");
-      if (res.ok) {
-        const data = await res.json();
-        setBlocks(data);
-      }
+      const data = await getHomepage();
+      setBlocks(data);
     } catch {
       setMessage({ type: "error", text: "Failed to load homepage content" });
     } finally {
@@ -92,38 +96,18 @@ export default function AdminHomepagePage() {
 
     try {
       if (editingBlock) {
-        const res = await fetch(`/api/admin/homepage/${editingBlock.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-
-        if (res.ok) {
-          setMessage({ type: "success", text: "Block updated" });
-          closeModal();
-          fetchBlocks();
-        } else {
-          const data = await res.json();
-          setMessage({ type: "error", text: data.error || "Failed to update" });
-        }
+        await updateHomepageBlock(editingBlock.id, form);
+        setMessage({ type: "success", text: "Block updated" });
+        closeModal();
+        fetchBlocks();
       } else {
-        const res = await fetch("/api/admin/homepage", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-
-        if (res.ok) {
-          setMessage({ type: "success", text: "Block added" });
-          closeModal();
-          fetchBlocks();
-        } else {
-          const data = await res.json();
-          setMessage({ type: "error", text: data.error || "Failed to add" });
-        }
+        await createHomepageBlock(form);
+        setMessage({ type: "success", text: "Block added" });
+        closeModal();
+        fetchBlocks();
       }
-    } catch {
-      setMessage({ type: "error", text: "An error occurred" });
+    } catch (err) {
+      setMessage({ type: "error", text: err.message || "An error occurred" });
     } finally {
       setIsSaving(false);
     }
@@ -131,15 +115,10 @@ export default function AdminHomepagePage() {
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`/api/admin/homepage/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setBlocks((prev) => prev.filter((b) => b.id !== id));
-        setDeleteConfirm(null);
-        setMessage({ type: "success", text: "Block deleted" });
-      } else {
-        const data = await res.json();
-        setMessage({ type: "error", text: data.error || "Failed to delete" });
-      }
+      await deleteHomepageBlock(id);
+      setBlocks((prev) => prev.filter((b) => b.id !== id));
+      setDeleteConfirm(null);
+      setMessage({ type: "success", text: "Block deleted" });
     } catch {
       setMessage({ type: "error", text: "Failed to delete" });
     }
@@ -157,17 +136,8 @@ export default function AdminHomepagePage() {
     const order = newBlocks.map((b) => b.id);
 
     try {
-      const res = await fetch("/api/admin/homepage", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reorder", order }),
-      });
-
-      if (res.ok) {
-        setBlocks(newBlocks);
-      } else {
-        fetchBlocks();
-      }
+      await reorderHomepageBlocks(order);
+      setBlocks(newBlocks);
     } catch {
       fetchBlocks();
     }

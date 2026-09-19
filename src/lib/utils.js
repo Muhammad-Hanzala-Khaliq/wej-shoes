@@ -91,3 +91,17 @@ export function formatDate(date) {
   const year = d.getFullYear();
   return `${day} ${month} ${year}`;
 }
+
+/**
+ * Format date with time for display
+ * @param {Date|string} date - Date to format
+ * @returns {string} Formatted date+time string (e.g., "15 Jan 2024, 2:30 PM")
+ */
+export function formatDateTime(date) {
+  return new Date(date).toLocaleDateString("en-PK", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

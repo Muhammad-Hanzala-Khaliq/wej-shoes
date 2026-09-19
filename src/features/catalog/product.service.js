@@ -474,6 +474,102 @@ export async function restoreProduct(id) {
 }
 
 /**
+ * Search products (public) by name or SKU
+ * @param {string} query - Search query
+ * @returns {Promise<Array>} Matching products (max 12)
+ */
+export async function searchProducts(query) {
+  if (!query || !query.trim()) return [];
+
+  return prisma.product.findMany({
+    where: {
+      status: "ACTIVE",
+      deletedAt: null,
+      OR: [
+        { name: { contains: query, mode: "insensitive" } },
+        { variants: { some: { sku: { contains: query, mode: "insensitive" } } } },
+      ],
+    },
+    take: 12,
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      regularPrice: true,
+      salePrice: true,
+      images: {
+        where: { isPrimary: true },
+        take: 1,
+        select: { imageUrl: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  }).then((products) =>
+    products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      regularPrice: Number(p.regularPrice),
+      salePrice: p.salePrice ? Number(p.salePrice) : null,
+      imageUrl: p.images[0]?.imageUrl || null,
+    }))
+  );
+}
+
+/**
+ * Get variant for checkout (public) with stock validation
+ * @param {string} variantId
+ * @returns {Promise<Object>} Variant data
+ * @throws {Error} If variant not found or out of stock
+ */
+export async function getCheckoutVariant(variantId) {
+  const variant = await prisma.productVariant.findUnique({
+    where: { id: variantId },
+    include: {
+      product: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          regularPrice: true,
+          salePrice: true,
+          images: {
+            where: { isPrimary: true },
+            take: 1,
+            select: { imageUrl: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!variant || variant.deletedAt) {
+    throw new Error("Variant not found");
+  }
+
+  if (variant.stockQuantity <= 0) {
+    throw new Error("Variant out of stock");
+  }
+
+  const product = variant.product;
+  const primaryImage = product.images?.[0]?.imageUrl || null;
+
+  return {
+    id: variant.id,
+    productId: product.id,
+    productName: product.name,
+    slug: product.slug,
+    regularPrice: Number(product.regularPrice),
+    salePrice: product.salePrice ? Number(product.salePrice) : null,
+    image: primaryImage,
+    color: variant.color,
+    size: variant.size,
+    sku: variant.sku,
+    stockQuantity: variant.stockQuantity,
+  };
+}
+
+/**
  * Update variant stock and record inventory history
  * @param {string} variantId - Variant ID
  * @param {number} change - Stock change (positive or negative)

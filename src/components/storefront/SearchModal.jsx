@@ -3,10 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { getRecentlyViewed, clearRecentlyViewed } from "@/lib/recently-viewed";
-
-function formatPrice(price) {
-  return `PKR ${Number(price).toLocaleString("en-PK")}`;
-}
+import { searchProducts } from "@/lib/api/search";
+import { formatPrice } from "@/lib/utils";
 
 export default function SearchModal({ open, onClose }) {
   const router = useRouter();
@@ -46,9 +44,8 @@ export default function SearchModal({ open, onClose }) {
     setLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
-        const data = await res.json();
-        if (res.ok) setResults(data.products || []);
+        const data = await searchProducts(query.trim());
+        setResults(data.products || []);
       } catch {
         // ignore
       } finally {

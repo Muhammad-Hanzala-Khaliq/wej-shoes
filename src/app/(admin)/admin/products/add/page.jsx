@@ -8,6 +8,8 @@ import Button from "@/components/ui/Button";
 import ImageUploader from "@/components/admin/ImageUploader";
 import VariantManager from "@/components/admin/VariantManager";
 import { SIZE_RANGES } from "@/lib/constants";
+import { createProduct } from "@/lib/api/admin/products";
+import { listCategories } from "@/lib/api/admin/categories";
 
 function generateSlug(text) {
   return text
@@ -45,11 +47,8 @@ export default function AddProductPage() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch("/api/admin/categories");
-        const data = await response.json();
-        if (response.ok) {
-          setCategories(data.categories);
-        }
+        const data = await listCategories();
+        setCategories(data.categories);
       } catch (err) {
         console.error("Failed to fetch categories:", err);
       }
@@ -144,17 +143,7 @@ export default function AddProductPage() {
         })),
       };
 
-      const response = await fetch("/api/admin/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create product");
-      }
+      await createProduct(payload);
 
       router.push("/admin/products?success=created");
     } catch (err) {

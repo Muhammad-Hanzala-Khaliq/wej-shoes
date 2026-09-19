@@ -8,6 +8,8 @@ import Button from "@/components/ui/Button";
 import ImageUploader from "@/components/admin/ImageUploader";
 import VariantManager from "@/components/admin/VariantManager";
 import { SIZE_RANGES } from "@/lib/constants";
+import { getProduct, updateProduct } from "@/lib/api/admin/products";
+import { listCategories } from "@/lib/api/admin/categories";
 
 function generateSlug(text) {
   return text
@@ -50,18 +52,10 @@ export default function EditProductPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productRes, categoriesRes] = await Promise.all([
-          fetch(`/api/admin/products/${id}`),
-          fetch("/api/admin/categories"),
+        const [productData, categoriesData] = await Promise.all([
+          getProduct(id),
+          listCategories(),
         ]);
-
-        if (!productRes.ok) {
-          setNotFound(true);
-          return;
-        }
-
-        const productData = await productRes.json();
-        const categoriesData = await categoriesRes.json();
 
         const product = productData.product;
 
@@ -98,9 +92,7 @@ export default function EditProductPage() {
           }))
         );
 
-        if (categoriesRes.ok) {
-          setCategories(categoriesData.categories);
-        }
+        setCategories(categoriesData.categories);
       } catch (err) {
         setServerError(err.message);
       } finally {
@@ -203,17 +195,7 @@ export default function EditProductPage() {
         })),
       };
 
-      const response = await fetch(`/api/admin/products/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update product");
-      }
+      await updateProduct(id, payload);
 
       router.push("/admin/products?success=updated");
     } catch (err) {

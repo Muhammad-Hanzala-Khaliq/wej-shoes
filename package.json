@@ -2,12 +2,15 @@
   "name": "wej-shoes",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@12.4.1",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma skills sync || exit 0"
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
@@ -16,17 +19,17 @@
     "next-auth": "^5.0.0-beta.32",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "zod": "^4.5.4"
+    "zod": "^4.6.2"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "eslint": "^9",
+    "@tailwindcss/postcss": "^4.3.3",
+    "eslint": "^9.39.5",
     "eslint-config-next": "16.3.4",
     "prisma": "^5.22.0",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.3.3",
     "tsx": "^4.23.13"
   },
-  "allowScripts": {
-    "unrs-resolver@1.12.2": true
+  "prisma": {
+    "seed": "node scripts/seed-categories.js"
   }
 }

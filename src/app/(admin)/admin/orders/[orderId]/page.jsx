@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
+import { getOrder, updateOrderStatus } from "@/lib/api/admin/orders";
 
 const STATUS_FLOW = [
   { status: "PENDING", label: "Order Placed" },
@@ -48,15 +49,8 @@ export default function AdminOrderDetailPage() {
   useEffect(() => {
     async function fetchOrder() {
       try {
-        const res = await fetch(`/api/admin/orders/${orderId}`);
-        if (res.status === 401) {
-          router.push("/admin-login");
-          return;
-        }
-        const data = await res.json();
-        if (res.ok) {
-          setOrder(data);
-        }
+        const data = await getOrder(orderId);
+        setOrder(data);
       } catch {
         // ignore
       } finally {
@@ -77,16 +71,8 @@ export default function AdminOrderDetailPage() {
 
     setUpdating(true);
     try {
-      const res = await fetch("/api/admin/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, status: newStatus }),
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setOrder((prev) => ({ ...prev, ...updated }));
-      }
+      const updated = await updateOrderStatus(orderId, newStatus);
+      setOrder((prev) => ({ ...prev, ...updated }));
     } catch {
       // ignore
     } finally {
@@ -97,22 +83,10 @@ export default function AdminOrderDetailPage() {
   const handleCancel = async () => {
     setUpdating(true);
     try {
-      const res = await fetch("/api/admin/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId,
-          status: "CANCELLED",
-          reason: cancelReason || "Cancelled by admin",
-        }),
-      });
-
-      if (res.ok) {
-        const updated = await res.json();
-        setOrder((prev) => ({ ...prev, ...updated }));
-        setShowCancel(false);
-        setCancelReason("");
-      }
+      const updated = await updateOrderStatus(orderId, "CANCELLED", cancelReason || "Cancelled by admin");
+      setOrder((prev) => ({ ...prev, ...updated }));
+      setShowCancel(false);
+      setCancelReason("");
     } catch {
       // ignore
     } finally {

@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useSettings } from "@/features/cms/settings-context";
 import CartBadge from "./CartBadge";
 import SearchModal from "./SearchModal";
+import { getCategories } from "@/lib/api/categories";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -29,21 +30,18 @@ export default function Header() {
   useEffect(() => {
     async function fetchMenu() {
       try {
-        const res = await fetch("/api/categories");
-        if (res.ok) {
-          const data = await res.json();
-          const structured = { MEN: [], WOMEN: [], KIDS: [] };
-          for (const parent of data.categories) {
-            if (parent.gender === "MEN" && parent.children) {
-              structured.MEN.push(...parent.children);
-            } else if (parent.gender === "WOMEN" && parent.children) {
-              structured.WOMEN.push(...parent.children);
-            } else if (parent.gender === "KIDS" && parent.children) {
-              structured.KIDS.push(...parent.children);
-            }
+        const data = await getCategories();
+        const structured = { MEN: [], WOMEN: [], KIDS: [] };
+        for (const parent of data.categories) {
+          if (parent.gender === "MEN" && parent.children) {
+            structured.MEN.push(...parent.children);
+          } else if (parent.gender === "WOMEN" && parent.children) {
+            structured.WOMEN.push(...parent.children);
+          } else if (parent.gender === "KIDS" && parent.children) {
+            structured.KIDS.push(...parent.children);
           }
-          setMenuData(structured);
         }
+        setMenuData(structured);
       } catch {
         // fallback: nav still works with plain links
       }

@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import QuickAddModal from "./QuickAddModal";
-
-function formatPrice(price) {
-  return `PKR ${Number(price).toLocaleString("en-PK")}`;
-}
+import { formatPrice } from "@/lib/utils";
 
 const MAX_VISIBLE_SIZES = 6;
 
@@ -80,7 +77,7 @@ export default function ProductCard({ product, clean = false }) {
         {/* Image area */}
         <div
           className="aspect-square relative overflow-hidden mb-3"
-          style={{ background: "#f2f2f2" }}
+          style={{ background: "var(--surface-soft)" }}
         >
           {currentImage ? (
             <img
@@ -100,7 +97,7 @@ export default function ProductCard({ product, clean = false }) {
           {hasSale && (
             <span
               className="absolute top-2 left-2 z-10 text-xs font-semibold px-2 py-0.5"
-              style={{ background: "var(--danger)", color: "#fff" }}
+              style={{ background: "var(--danger)", color: "var(--bg)" }}
             >
               SALE
             </span>
@@ -232,7 +229,7 @@ export default function ProductCard({ product, clean = false }) {
         {/* Image area */}
         <div
           className="aspect-square relative overflow-hidden"
-          style={{ background: "#f2f2f2" }}
+          style={{ background: "var(--surface-soft)" }}
         >
           {currentImage ? (
             <img

@@ -53,9 +53,9 @@ export default function VariantSelector({ variants = [], selectedVariant, onSele
               disabled={!isAvailable}
               className="flex items-center justify-center w-14 h-14 rounded-lg text-sm font-medium transition-all duration-200"
               style={{
-                background: isSelected ? "#000000" : "#f2f2f2",
-                color: isSelected ? "#ffffff" : "var(--text-primary)",
-                border: isSelected ? "2px solid #000000" : "2px solid transparent",
+                background: isSelected ? "var(--ink)" : "var(--surface-soft)",
+                color: isSelected ? "var(--bg)" : "var(--text-primary)",
+                border: isSelected ? "2px solid var(--ink)" : "2px solid transparent",
                 opacity: isAvailable ? 1 : 0.4,
                 textDecoration: isAvailable ? "none" : "line-through",
               }}

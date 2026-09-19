@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
-import prisma from "@/lib/db";
+import { getAdminOrderDetail } from "@/features/orders/order.service";
+import { logError } from "@/lib/logger";
 
 /**
  * GET handler - Get order details (admin only)
@@ -13,29 +14,17 @@ export async function GET(request, { params }) {
     }
 
     const { orderId } = await params;
-
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        items: true,
-        statusHistory: {
-          orderBy: { createdAt: "desc" },
-        },
-        user: {
-          select: { id: true, firstName: true, lastName: true, email: true, phone: true },
-        },
-      },
-    });
-
-    if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    }
-
+    const order = await getAdminOrderDetail(orderId);
     return NextResponse.json(order);
   } catch (error) {
-    console.error("GET /api/admin/orders/[orderId] error:", error);
+    logError("GET /api/admin/orders/[orderId]", error);
+
+    if (error.message === "Order not found") {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+
     return NextResponse.json(
-      { error: error.message || "Failed to fetch order" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getProducts, createProduct } from "@/features/catalog/product.service";
+import { logError } from "@/lib/logger";
 
 /**
  * GET handler - Fetch products with pagination
@@ -34,7 +35,7 @@ export async function GET(request) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error("GET /api/admin/products error:", error);
+    logError("GET /api/admin/products", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -68,14 +69,14 @@ export async function POST(request) {
 
     return NextResponse.json({ product }, { status: 201 });
   } catch (error) {
-    console.error("POST /api/admin/products error:", error);
+    logError("POST /api/admin/products", error);
 
     if (error.message.includes("already exists")) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

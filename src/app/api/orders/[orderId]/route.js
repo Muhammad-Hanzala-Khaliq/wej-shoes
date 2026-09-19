@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getOrderById, cancelOrder } from "@/features/orders/order.service";
+import { logError } from "@/lib/logger";
 
 /**
  * GET handler - Get order by ID
@@ -21,11 +22,8 @@ export async function GET(request, { params }) {
 
     return NextResponse.json(order);
   } catch (error) {
-    console.error("GET /api/orders/[orderId] error:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch order" },
-      { status: 500 }
-    );
+    logError("GET /api/orders/[orderId]", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -45,7 +43,7 @@ export async function POST(request, { params }) {
 
     return NextResponse.json(order);
   } catch (error) {
-    console.error("POST /api/orders/[orderId] error:", error);
+    logError("POST /api/orders/[orderId]", error);
 
     if (error.message === "Order not found") {
       return NextResponse.json({ error: error.message }, { status: 404 });
@@ -55,9 +53,6 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json(
-      { error: error.message || "Failed to cancel order" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

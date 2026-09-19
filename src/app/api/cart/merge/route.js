@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { mergeGuestCartToUser } from "@/features/cart/cart.service";
+import { logError } from "@/lib/logger";
 
 /**
  * POST handler - Merge guest cart into user cart
@@ -38,9 +39,9 @@ export async function POST() {
 
     return response;
   } catch (error) {
-    console.error("POST /api/cart/merge error:", error);
+    logError("POST /api/cart/merge", error);
     return NextResponse.json(
-      { error: error.message || "Failed to merge cart" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

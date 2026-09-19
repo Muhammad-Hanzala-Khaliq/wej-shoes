@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import { getSettings, updateSettings } from "@/lib/api/admin/cms";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState({
@@ -21,19 +22,16 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const res = await fetch("/api/admin/settings");
-        if (res.ok) {
-          const data = await res.json();
-          setSettings({
-            storeName: data.storeName || "",
-            logoUrl: data.logoUrl || "",
-            supportEmail: data.supportEmail || "",
-            phone: data.phone || "",
-            whatsappNumber: data.whatsappNumber || "",
-            currency: data.currency || "PKR",
-            codEnabled: data.codEnabled ?? true,
-          });
-        }
+        const data = await getSettings();
+        setSettings({
+          storeName: data.storeName || "",
+          logoUrl: data.logoUrl || "",
+          supportEmail: data.supportEmail || "",
+          phone: data.phone || "",
+          whatsappNumber: data.whatsappNumber || "",
+          currency: data.currency || "PKR",
+          codEnabled: data.codEnabled ?? true,
+        });
       } catch {
         setMessage({ type: "error", text: "Failed to load settings" });
       } finally {
@@ -59,18 +57,8 @@ export default function AdminSettingsPage() {
     setMessage({ type: "", text: "" });
 
     try {
-      const res = await fetch("/api/admin/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
-
-      if (res.ok) {
-        setMessage({ type: "success", text: "Settings saved successfully" });
-      } else {
-        const data = await res.json();
-        setMessage({ type: "error", text: data.error || "Failed to save settings" });
-      }
+      await updateSettings(settings);
+      setMessage({ type: "success", text: "Settings saved successfully" });
     } catch {
       setMessage({ type: "error", text: "An error occurred. Please try again." });
     } finally {
