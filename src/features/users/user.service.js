@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 /**
  * Create a new user (signup)
@@ -107,4 +108,76 @@ export async function getAccountData(userId) {
       memberDuration,
     },
   };
+}
+
+/**
+ * Generate a password reset token for a user
+ * @param {string} email
+ * @returns {Promise<{ token: string, email: string }>}
+ */
+export async function generatePasswordResetToken(email) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    return { token: null, email: null };
+  }
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = await bcrypt.hash(rawToken, 10);
+
+  await prisma.passwordResetToken.deleteMany({
+    where: { userId: user.id, usedAt: null },
+  });
+
+  await prisma.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      tokenHash,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    },
+  });
+
+  return { token: rawToken, email: user.email };
+}
+
+/**
+ * Reset a user's password using a valid token
+ * @param {string} token - Raw token from the URL
+ * @param {string} newPassword
+ * @returns {Promise<{ success: boolean }>}
+ */
+export async function resetPasswordWithToken(token, newPassword) {
+  try {
+    const tokens = await prisma.passwordResetToken.findMany({
+      where: { usedAt: null, expiresAt: { gt: new Date() } },
+    });
+
+    for (const record of tokens) {
+      let isValid = false;
+      try {
+        isValid = await bcrypt.compare(token, record.tokenHash);
+      } catch {
+        continue;
+      }
+      if (!isValid) continue;
+
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+
+      await prisma.user.update({
+        where: { id: record.userId },
+        data: { passwordHash },
+      });
+
+      await prisma.passwordResetToken.update({
+        where: { id: record.id },
+        data: { usedAt: new Date() },
+      });
+
+      return { success: true };
+    }
+
+    return { success: false };
+  } catch (error) {
+    logError("resetPasswordWithToken", error);
+    throw error;
+  }
 }

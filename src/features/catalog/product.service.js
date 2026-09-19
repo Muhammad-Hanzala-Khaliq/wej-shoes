@@ -1,6 +1,15 @@
 import prisma from "@/lib/db";
 import { generateSlug } from "@/lib/utils";
 import { generateUniqueSlug } from "@/lib/slug-generator";
+import { revalidateProduct, revalidateCatalog, revalidateSitemap } from "@/lib/revalidate";
+
+export async function getAllProductSlugs() {
+  const products = await prisma.product.findMany({
+    where: { deletedAt: null, status: "ACTIVE" },
+    select: { slug: true },
+  });
+  return products.map((p) => p.slug);
+}
 
 /**
  * Get all products with pagination and filters
@@ -252,6 +261,11 @@ export async function createProduct(data) {
       images: { orderBy: { sortOrder: "asc" } },
       variants: { orderBy: [{ color: "asc" }, { size: "asc" }] },
     },
+  }).then((result) => {
+    revalidateProduct(uniqueSlug);
+    revalidateCatalog();
+    revalidateSitemap();
+    return result;
   });
 }
 
@@ -416,6 +430,11 @@ export async function updateProduct(id, data) {
         orderBy: [{ color: "asc" }, { size: "asc" }],
       },
     },
+  }).then((result) => {
+    revalidateProduct(result?.slug || productSlug);
+    revalidateCatalog();
+    revalidateSitemap();
+    return result;
   });
 }
 
@@ -442,6 +461,10 @@ export async function deleteProduct(id) {
       data: { deletedAt: new Date() },
     });
   }, { maxWait: 20000, timeout: 60000 });
+
+  revalidateProduct(existing.slug);
+  revalidateCatalog();
+  revalidateSitemap();
 
   return { message: "Product deleted successfully" };
 }

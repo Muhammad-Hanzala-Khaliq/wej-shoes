@@ -1,5 +1,6 @@
 import prisma from "@/lib/db";
 import { generateSlug } from "@/lib/utils";
+import { revalidateCatalog } from "@/lib/revalidate";
 
 /**
  * Get all categories with optional filters
@@ -167,6 +168,8 @@ export async function createCategory(data) {
     },
   });
 
+  revalidateCatalog();
+
   return category;
 }
 
@@ -218,6 +221,8 @@ export async function updateCategory(id, data) {
     },
   });
 
+  revalidateCatalog();
+
   return category;
 }
 
@@ -237,6 +242,8 @@ export async function deleteCategory(id) {
     where: { id },
     data: { deletedAt: new Date() },
   });
+
+  revalidateCatalog();
 
   return category;
 }

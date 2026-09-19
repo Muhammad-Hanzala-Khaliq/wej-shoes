@@ -12,10 +12,8 @@ export async function POST(request) {
 
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.errors[0].message },
-        { status: 400 }
-      );
+      const msg = parsed.error?.issues?.[0]?.message || "Invalid input";
+      return NextResponse.json({ error: msg }, { status: 400 });
     }
 
     const { firstName, lastName, email, phone, password } = parsed.data;

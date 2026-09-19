@@ -1,4 +1,5 @@
 import prisma from "@/lib/db";
+import { revalidateHome } from "@/lib/revalidate";
 
 /**
  * Get store settings (creates defaults if none exist)
@@ -36,7 +37,7 @@ export async function updateStoreSettings(data) {
   const existing = await prisma.storeSettings.findFirst();
 
   if (existing) {
-    return prisma.storeSettings.update({
+    const result = await prisma.storeSettings.update({
       where: { id: existing.id },
       data: {
         storeName: data.storeName ?? undefined,
@@ -48,9 +49,11 @@ export async function updateStoreSettings(data) {
         codEnabled: data.codEnabled ?? undefined,
       },
     });
+    revalidateHome();
+    return result;
   }
 
-  return prisma.storeSettings.create({
+  const result = await prisma.storeSettings.create({
     data: {
       storeName: data.storeName || "WEJ Shoes",
       logoUrl: data.logoUrl || null,
@@ -61,6 +64,8 @@ export async function updateStoreSettings(data) {
       codEnabled: data.codEnabled ?? true,
     },
   });
+  revalidateHome();
+  return result;
 }
 
 /**
@@ -114,6 +119,9 @@ export async function createHomepageContent(data) {
       sortOrder: data.sortOrder ?? nextSort,
       isActive: data.isActive ?? true,
     },
+  }).then((result) => {
+    revalidateHome();
+    return result;
   });
 }
 
@@ -141,6 +149,9 @@ export async function updateHomepageContent(id, data) {
       sortOrder: data.sortOrder !== undefined ? data.sortOrder : undefined,
       isActive: data.isActive !== undefined ? data.isActive : undefined,
     },
+  }).then((result) => {
+    revalidateHome();
+    return result;
   });
 }
 
@@ -156,6 +167,7 @@ export async function deleteHomepageContent(id) {
   }
 
   await prisma.homepageContent.delete({ where: { id } });
+  revalidateHome();
   return { message: "Content deleted successfully" };
 }
 
@@ -292,5 +304,6 @@ export async function reorderHomepageContent(orderArray) {
     )
   );
 
+  revalidateHome();
   return getAllHomepageContent();
 }

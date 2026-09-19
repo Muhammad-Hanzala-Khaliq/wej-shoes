@@ -15,7 +15,7 @@ const navLinks = [
 
 export default function Header() {
   const { data: session, status } = useSession();
-  const { storeName, logoUrl } = useSettings();
+  useSettings();
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [menuData, setMenuData] = useState({ MEN: [], WOMEN: [], KIDS: [] });
@@ -218,12 +218,8 @@ export default function Header() {
       <div className="container-page">
         <div className="flex items-center justify-between h-16">
           <div className="flex-shrink-0">
-            <Link href="/" className="flex items-center text-xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
-              {logoUrl ? (
-                <img src={logoUrl} alt={storeName} className="h-8 w-auto" />
-              ) : (
-                <span className="font-display">{storeName}</span>
-              )}
+            <Link href="/" aria-label="WEJ Shoes - Home">
+              Wej Shoes New
             </Link>
           </div>
 
@@ -248,7 +244,12 @@ export default function Header() {
               <Link
                 href="/collections/men"
                 className="flex items-center gap-1.5 text-sm font-medium transition-colors"
-                style={{ color: openMenu === "MEN" ? "var(--text-primary)" : "var(--text-secondary)" }}
+                style={{
+                  color:
+                    openMenu === "MEN"
+                      ? "var(--text-primary)"
+                      : "var(--text-secondary)",
+                }}
               >
                 Men
                 <svg
@@ -257,7 +258,12 @@ export default function Header() {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </Link>
               {openMenu === "MEN" && renderDropdown("MEN", menuData.MEN)}
@@ -272,7 +278,12 @@ export default function Header() {
               <Link
                 href="/collections/women"
                 className="flex items-center gap-1.5 text-sm font-medium transition-colors"
-                style={{ color: openMenu === "WOMEN" ? "var(--text-primary)" : "var(--text-secondary)" }}
+                style={{
+                  color:
+                    openMenu === "WOMEN"
+                      ? "var(--text-primary)"
+                      : "var(--text-secondary)",
+                }}
               >
                 Women
                 <svg
@@ -281,7 +292,12 @@ export default function Header() {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </Link>
               {openMenu === "WOMEN" && renderDropdown("WOMEN", menuData.WOMEN)}
@@ -296,7 +312,12 @@ export default function Header() {
               <Link
                 href="/collections/kids"
                 className="flex items-center gap-1.5 text-sm font-medium transition-colors"
-                style={{ color: openMenu === "KIDS" ? "var(--text-primary)" : "var(--text-secondary)" }}
+                style={{
+                  color:
+                    openMenu === "KIDS"
+                      ? "var(--text-primary)"
+                      : "var(--text-secondary)",
+                }}
               >
                 Kids
                 <svg
@@ -305,7 +326,12 @@ export default function Header() {
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </Link>
               {openMenu === "KIDS" && renderDropdown("KIDS", menuData.KIDS)}
@@ -318,8 +344,18 @@ export default function Header() {
               className="p-2"
               style={{ color: "var(--text-secondary)" }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
             </button>
 
@@ -327,7 +363,12 @@ export default function Header() {
 
             <div className="hidden md:block" ref={dropdownRef}>
               {status === "loading" ? (
-                <span className="text-sm" style={{ color: "var(--text-muted)" }}>...</span>
+                <span
+                  className="text-sm"
+                  style={{ color: "var(--text-muted)" }}
+                >
+                  ...
+                </span>
               ) : session ? (
                 <div className="relative">
                   <button
@@ -342,22 +383,36 @@ export default function Header() {
                       stroke="currentColor"
                       viewBox="0 0 24 24"
                     >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </button>
 
                   {dropdownOpen && (
                     <div
                       className="absolute right-0 mt-2 w-48 rounded-lg py-2 z-50"
-                      style={{ background: "var(--surface)", border: "1px solid var(--border)", boxShadow: "var(--shadow-lg)" }}
+                      style={{
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)",
+                        boxShadow: "var(--shadow-lg)",
+                      }}
                     >
                       <Link
                         href="/account"
                         onClick={() => setDropdownOpen(false)}
                         className="block px-4 py-2 text-sm"
                         style={{ color: "var(--text-secondary)" }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background =
+                            "var(--surface-soft)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
                       >
                         My Account
                       </Link>
@@ -367,19 +422,34 @@ export default function Header() {
                           onClick={() => setDropdownOpen(false)}
                           className="block px-4 py-2 text-sm"
                           style={{ color: "var(--text-secondary)" }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.background =
+                              "var(--surface-soft)")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background = "transparent")
+                          }
                         >
                           Admin Panel
                         </Link>
                       )}
-                      <hr style={{ borderColor: "var(--border)", margin: "0.25rem 0" }} />
+                      <hr
+                        style={{
+                          borderColor: "var(--border)",
+                          margin: "0.25rem 0",
+                        }}
+                      />
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm"
                         style={{ color: "var(--danger)" }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.background =
+                            "var(--surface-soft)")
+                        }
+                        onMouseLeave={(e) =>
+                          (e.currentTarget.style.background = "transparent")
+                        }
                       >
                         Logout
                       </button>
@@ -403,8 +473,18 @@ export default function Header() {
               className="md:hidden p-2"
               style={{ color: "var(--text-secondary)" }}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           </div>
@@ -433,8 +513,18 @@ export default function Header() {
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             aria-label="Close menu"
           >
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -445,8 +535,12 @@ export default function Header() {
             onClick={closeMenu}
             className="block py-2.5 px-3 rounded-lg transition-colors"
             style={{ color: "var(--text-secondary)" }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "var(--surface-soft)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
           >
             Home
           </Link>
@@ -466,13 +560,23 @@ export default function Header() {
             onClick={closeMenu}
             className="block py-2.5 px-3 rounded-lg transition-colors"
             style={{ color: "var(--text-secondary)" }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "var(--surface-soft)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
           >
             New Arrivals
           </Link>
 
-          <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.75rem", marginTop: "0.5rem" }}>
+          <div
+            style={{
+              borderTop: "1px solid var(--border)",
+              paddingTop: "0.75rem",
+              marginTop: "0.5rem",
+            }}
+          >
             {session ? (
               <>
                 <Link
@@ -480,8 +584,12 @@ export default function Header() {
                   onClick={closeMenu}
                   className="block py-2.5 px-3 rounded-lg transition-colors"
                   style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "var(--surface-soft)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
                   My Account
                 </Link>
@@ -491,8 +599,12 @@ export default function Header() {
                     onClick={closeMenu}
                     className="block py-2.5 px-3 rounded-lg transition-colors"
                     style={{ color: "var(--text-secondary)" }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = "var(--surface-soft)")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
                   >
                     Admin Panel
                   </Link>
@@ -501,8 +613,12 @@ export default function Header() {
                   onClick={handleLogout}
                   className="block w-full text-left py-2.5 px-3 rounded-lg transition-colors"
                   style={{ color: "var(--danger)" }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "var(--surface-soft)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
                   Logout
                 </button>
@@ -513,8 +629,12 @@ export default function Header() {
                 onClick={closeMenu}
                 className="block py-2.5 px-3 rounded-lg transition-colors"
                 style={{ color: "var(--text-secondary)" }}
-                onMouseEnter={(e) => e.currentTarget.style.background = "var(--surface-soft)"}
-                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "var(--surface-soft)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
               >
                 Login
               </Link>

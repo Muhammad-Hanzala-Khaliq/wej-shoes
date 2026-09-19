@@ -1,49 +1,70 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+# Next.js
+.next/
+out/
+build/
+dist/
 
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
+# Production
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-!.env.example
+# Environment (CRITICAL - secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
 
-# vercel
+# Testing
+coverage/
+.nyc_output
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# AI Tools (ye folders ignore karein)
+.agents/
+.claude/
+.cursor/
+.devin/
+.copilot/
+.ai/
+
+# Prisma
+prisma/migrations/
+
+# Misc
 .vercel
+.cache/
+.temp/
+tmp/
 
-# others
-.agents
-.claude
-.cursor
-.devin
+# Keep these (don't add to ignore):
+# - .env.example (template hai)
+# - package.json
+# - next.config.mjs
+# - prisma/schema.prisma
+# - tsconfig.json / jsconfig.json
+# - eslint.config.mjs
 
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+comprehensive-testing.md
+docs
+BACKUP.md
+README.md   
+SRD.md

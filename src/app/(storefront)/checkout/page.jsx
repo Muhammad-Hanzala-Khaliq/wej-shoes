@@ -1,5 +1,7 @@
 import CheckoutClient from "@/components/storefront/CheckoutClient";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Checkout | WEJ Shoes",
   description: "Complete your WEJ Shoes order with Cash on Delivery payment.",

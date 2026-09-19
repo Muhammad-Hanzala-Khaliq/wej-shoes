@@ -40,6 +40,14 @@
 
   --container: 1200px;
 }
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
 
 html { scroll-behavior: smooth; }
 

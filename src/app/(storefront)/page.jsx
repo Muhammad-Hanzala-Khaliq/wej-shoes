@@ -8,8 +8,6 @@ import {
   getNewArrivals,
 } from "@/features/cms/homepage.service";
 
-export const revalidate = 60;
-
 function serializeDecimal(data) {
   return JSON.parse(
     JSON.stringify(data, (key, value) => {

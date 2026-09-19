@@ -3,16 +3,13 @@ import SessionProvider from "@/components/providers/SessionProvider";
 import CartProvider from "@/features/cart/CartProvider";
 import CartToast from "@/components/storefront/CartToast";
 import { SettingsProvider } from "@/features/cms/settings-context";
-import { auth } from "@/auth";
 
 export const metadata = {
   title: "WEJ Shoes - Premium Footwear",
   description: "Quality footwear for men and women",
 };
 
-export default async function RootLayout({ children }) {
-  const session = await auth();
-
+export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
@@ -22,7 +19,7 @@ export default async function RootLayout({ children }) {
         >
           Skip to main content
         </a>
-        <SessionProvider session={session}>
+        <SessionProvider>
           <CartProvider>
             <CartToast />
             <SettingsProvider>

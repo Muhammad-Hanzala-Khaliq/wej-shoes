@@ -1,58 +1,39 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import AddToCartButton from "@/components/storefront/AddToCartButton";
 import { addRecentlyViewed } from "@/lib/recently-viewed";
 import { formatPrice } from "@/lib/utils";
 
 export default function ProductInfoPanel({ product, variants, initialVariantId }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const [wishlist, setWishlist] = useState(false);
   const [openAccordion, setOpenAccordion] = useState(null);
   const [showSizeChart, setShowSizeChart] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
 
-  // Helper: find first in-stock variant
   const findFirstInStock = () => {
     return variants.find((v) => v.stockQuantity > 0 && v.status === "ACTIVE") || variants[0];
   };
 
-  // Initialize selectedVariant
   const [selectedVariant, setSelectedVariant] = useState(() => {
-    // Priority 1: variant ID from URL prop (passed from server component)
     if (initialVariantId) {
-      const urlVariant = variants.find((v) => v.id === initialVariantId);
-      if (urlVariant) return urlVariant;
+      const v = variants.find((v) => v.id === initialVariantId);
+      if (v) return v;
     }
-
-    // Priority 2: variant ID from current URL (if page loaded directly)
-    const urlVariantId = searchParams.get("variant");
-    if (urlVariantId) {
-      const urlVariant = variants.find((v) => v.id === urlVariantId);
-      if (urlVariant) return urlVariant;
-    }
-
-    // Priority 3: first in-stock variant (Daisy behavior)
     return findFirstInStock();
   });
 
-  // Update URL when variant changes OR on initial load
+  // Instant URL sync on mount — no re-render, no network request
   useEffect(() => {
     if (!selectedVariant) return;
-
-    const currentVariantId = searchParams.get("variant");
-
-    // Only update if variant ID is missing or different
-    if (currentVariantId !== selectedVariant.id) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("variant", selectedVariant.id);
-
-      const newUrl = `${window.location.pathname}?${params.toString()}`;
-      router.replace(newUrl, { scroll: false });
+    if (!window.location.search.includes("variant=")) {
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}?variant=${selectedVariant.id}`
+      );
     }
-  }, [selectedVariant, searchParams, router]);
+  }, [selectedVariant]);
 
   // Track recently viewed
   useEffect(() => {
@@ -65,26 +46,28 @@ export default function ProductInfoPanel({ product, variants, initialVariantId }
     });
   }, [product.slug]);
 
-  // Handle size selection
+  // Handle size selection — instant URL bar update
   const handleSizeSelect = (size) => {
     const variant = variants.find((v) => String(v.size) === String(size));
     if (variant && variant.stockQuantity > 0) {
       setSelectedVariant(variant);
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}?variant=${variant.id}`
+      );
     }
   };
 
-  // Handle Buy Now - redirect to checkout without adding to cart
+  // Handle Buy Now
   const handleBuyNow = () => {
     if (!selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow) return;
-
     setIsBuyingNow(true);
-    router.push(`/checkout?variant=${selectedVariant.id}&quantity=1&buyNow=true`);
+    window.location.href = `/checkout?variant=${selectedVariant.id}&quantity=1&buyNow=true`;
   };
 
-  // Get unique sizes from variants
   const sizes = [...new Set(variants.map((v) => String(v.size)))];
 
-  // Check if a size is available
   const isSizeAvailable = (size) => {
     const variant = variants.find((v) => String(v.size) === String(size));
     return variant && variant.stockQuantity > 0 && variant.status === "ACTIVE";
@@ -209,14 +192,14 @@ export default function ProductInfoPanel({ product, variants, initialVariantId }
         onClick={handleBuyNow}
         disabled={!selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow}
         className="w-full h-10 rounded-full font-semibold text-sm transition-colors"
-          style={{
-            background: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
-              ? "var(--border)"
-              : "var(--bg)",
-            color: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
-              ? "var(--text-muted)"
-              : "var(--ink)",
-            border: "1px solid var(--ink)",
+        style={{
+          background: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
+            ? "var(--border)"
+            : "var(--bg)",
+          color: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
+            ? "var(--text-muted)"
+            : "var(--ink)",
+          border: "1px solid var(--ink)",
           cursor: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
             ? "not-allowed"
             : "pointer",
@@ -320,7 +303,6 @@ export default function ProductInfoPanel({ product, variants, initialVariantId }
             className="relative bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button */}
             <button
               onClick={() => setShowSizeChart(false)}
               className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-md transition-colors hover:bg-gray-100"
@@ -331,7 +313,6 @@ export default function ProductInfoPanel({ product, variants, initialVariantId }
               </svg>
             </button>
 
-            {/* Size Chart Image */}
             <img
               src="/size-chart.png"
               alt="Size Chart - Women Shoes"

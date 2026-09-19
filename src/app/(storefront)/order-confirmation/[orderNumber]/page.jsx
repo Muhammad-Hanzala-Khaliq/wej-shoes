@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getOrderByOrderNumber } from "@/features/orders/order.service";
 import { formatPrice } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Order Confirmation - WEJ Shoes",
 };

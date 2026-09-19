@@ -1,4 +1,7 @@
 import prisma from "@/lib/db";
+import { revalidateProduct } from "@/lib/revalidate";
+import { sendEmail } from "@/lib/email";
+import { orderConfirmationEmail } from "@/lib/emails/templates";
 
 /**
  * Generate unique order number
@@ -192,6 +195,43 @@ export async function createOrder({ userId, sessionId, shippingAddress, notes })
 
     return newOrder;
   }, { maxWait: 20000, timeout: 15000 });
+
+  // Revalidate affected product pages (keeps stock display fresh)
+  try {
+    const productIds = [...new Set(cart.items.map((item) => item.variant.product.id))];
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { slug: true },
+    });
+    for (const p of products) {
+      revalidateProduct(p.slug);
+    }
+  } catch {
+    // revalidation failure must never fail the order
+  }
+
+  // Send order confirmation email (fire-and-forget, must not fail the order)
+  try {
+    const fullOrder = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: { items: true },
+    });
+    if (fullOrder?.customerEmail) {
+      await sendEmail({
+        to: fullOrder.customerEmail,
+        subject: `Order Confirmed - #${fullOrder.orderNumber}`,
+        html: orderConfirmationEmail({
+          orderNumber: fullOrder.orderNumber,
+          totalAmount: fullOrder.totalAmount,
+          subtotal: fullOrder.subtotal,
+          shippingFee: fullOrder.shippingFee,
+          items: fullOrder.items,
+        }),
+      });
+    }
+  } catch {
+    // email failure must never fail the order
+  }
 
   // Return order with items
   return prisma.order.findUnique({

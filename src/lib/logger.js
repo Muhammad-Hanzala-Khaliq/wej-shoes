@@ -3,6 +3,7 @@ export function logError(scope, error, context) {
     level: "error",
     scope,
     message: error?.message || String(error),
+    stack: error?.stack || null,
     context: context || null,
     time: new Date().toISOString(),
   }));
