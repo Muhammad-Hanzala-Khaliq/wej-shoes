@@ -28,6 +28,13 @@ export default function OrdersClient({ initialOrders, initialPagination }) {
   const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
   const [search, setSearch] = useState(searchParams.get("search") || "");
 
+  // Sync filter state when searchParams change (e.g., after router.push)
+  useEffect(() => {
+    setStatusFilter(searchParams.get("status") || "");
+    setSearchInput(searchParams.get("search") || "");
+    setSearch(searchParams.get("search") || "");
+  }, [searchParams]);
+
   useEffect(() => {
     setOrders(initialOrders);
     setPagination(initialPagination);

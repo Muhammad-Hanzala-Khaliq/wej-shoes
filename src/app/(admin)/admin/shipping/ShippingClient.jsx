@@ -39,6 +39,7 @@ export default function ShippingClient({ initialRules, initialTotal, initialPage
   const [form, setForm] = useState(emptyRule);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [fieldErrors, setFieldErrors] = useState({});
 
   useEffect(() => {
     setRules(initialRules);
@@ -77,31 +78,51 @@ export default function ShippingClient({ initialRules, initialTotal, initialPage
     setShowModal(false);
     setEditingRule(null);
     setForm(emptyRule);
+    setFieldErrors({});
+    setMessage({ type: "", text: "" });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
     setMessage({ type: "", text: "" });
+    setFieldErrors({});
 
     const payload = {
-      ...form,
+      name: form.name.trim(),
+      type: form.type,
       amount: parseFloat(form.amount) || 0,
       freeShippingThreshold: form.freeShippingThreshold ? parseFloat(form.freeShippingThreshold) : null,
+      isActive: form.isActive,
     };
+
+    // Client-side validation
+    const errors = {};
+    if (!payload.name) errors.name = "Rule name is required";
+    if (!payload.type) errors.type = "Type is required";
+    if (payload.amount < 0) errors.amount = "Amount must be positive";
+    if (payload.freeShippingThreshold !== null && payload.freeShippingThreshold < 0) {
+      errors.freeShippingThreshold = "Threshold must be positive";
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setIsSaving(false);
+      return;
+    }
 
     try {
       if (editingRule) {
         await updateShippingRule(editingRule.id, payload);
-        setMessage({ type: "success", text: "Rule updated" });
+        setMessage({ type: "success", text: "Rule updated successfully" });
       } else {
         await createShippingRule(payload);
-        setMessage({ type: "success", text: "Rule added" });
+        setMessage({ type: "success", text: "Rule added successfully" });
       }
       closeModal();
       router.refresh();
-    } catch {
-      setMessage({ type: "error", text: "An error occurred" });
+    } catch (err) {
+      const errMsg = err.message || "An error occurred";
+      setMessage({ type: "error", text: errMsg });
     } finally {
       setIsSaving(false);
     }
@@ -217,15 +238,25 @@ export default function ShippingClient({ initialRules, initialTotal, initialPage
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <Input label="Rule Name" name="name" value={form.name} onChange={handleChange} placeholder="Standard Shipping" required />
+              <div>
+                <Input label="Rule Name" name="name" value={form.name} onChange={handleChange} placeholder="Standard Shipping" required />
+                {fieldErrors.name && <p className="text-xs text-red-600 mt-1">{fieldErrors.name}</p>}
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Type <span className="text-red-500">*</span></label>
-                <select name="type" value={form.type} onChange={handleChange} className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" required>
+                <select name="type" value={form.type} onChange={handleChange} className={`block w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${fieldErrors.type ? "border-red-500" : "border-gray-300"}`} required>
                   {SHIPPING_TYPES.map((t) => (<option key={t.value} value={t.value}>{t.label}</option>))}
                 </select>
+                {fieldErrors.type && <p className="text-xs text-red-600 mt-1">{fieldErrors.type}</p>}
               </div>
-              <Input label="Amount (PKR)" type="number" name="amount" value={form.amount} onChange={handleChange} placeholder="200" required />
-              <Input label="Free Shipping Threshold (PKR)" type="number" name="freeShippingThreshold" value={form.freeShippingThreshold} onChange={handleChange} placeholder="5000" />
+              <div>
+                <Input label="Amount (PKR)" type="number" name="amount" value={form.amount} onChange={handleChange} placeholder="200" required />
+                {fieldErrors.amount && <p className="text-xs text-red-600 mt-1">{fieldErrors.amount}</p>}
+              </div>
+              <div>
+                <Input label="Free Shipping Threshold (PKR)" type="number" name="freeShippingThreshold" value={form.freeShippingThreshold} onChange={handleChange} placeholder="5000" />
+                {fieldErrors.freeShippingThreshold && <p className="text-xs text-red-600 mt-1">{fieldErrors.freeShippingThreshold}</p>}
+              </div>
               <p className="text-xs text-gray-500 -mt-2">Orders above this amount get free shipping</p>
               <div className="flex items-center gap-3 pt-2">
                 <label className="relative inline-flex items-center cursor-pointer">

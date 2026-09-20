@@ -41,6 +41,14 @@ export default function ProductsClient({
   const [status, setStatus] = useState(searchParams.get("status") || "");
   const [gender, setGender] = useState(searchParams.get("gender") || "");
 
+  // Sync filter state when searchParams change (e.g., after router.push)
+  useEffect(() => {
+    setSearch(searchParams.get("search") || "");
+    setCategoryId(searchParams.get("categoryId") || "");
+    setStatus(searchParams.get("status") || "");
+    setGender(searchParams.get("gender") || "");
+  }, [searchParams]);
+
   useEffect(() => {
     const success = searchParams.get("success");
     if (success === "created") showToast("Product created successfully", "success");

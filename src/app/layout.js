@@ -26,7 +26,11 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${archivo.variable} ${roboto.variable}`}>
+    <html
+      lang="en"
+      className={`${archivo.variable} ${roboto.variable}`}
+      data-scroll-behavior="smooth"
+    >
       <body>
         <a
           href="#main-content"

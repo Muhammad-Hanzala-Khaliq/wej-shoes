@@ -63,9 +63,9 @@ export function createShippingRule(data) {
 }
 
 export function updateShippingRule(id, data) {
-  return apiFetch(`/api/admin/shipping?id=${id}`, {
+  return apiFetch("/api/admin/shipping", {
     method: "PUT",
-    body: JSON.stringify(data),
+    body: JSON.stringify({ id, ...data }),
   });
 }
 
