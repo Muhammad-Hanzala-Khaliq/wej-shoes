@@ -24,6 +24,8 @@ export default function OrderDetailClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelError, setCancelError] = useState("");
 
   useEffect(() => {
     if (!orderNumber) return;
@@ -65,30 +67,47 @@ export default function OrderDetailClient() {
     fetchOrder();
   }, [orderNumber]);
 
-  const handleCancel = async () => {
-    if (!confirm("Are you sure you want to cancel this order?")) return;
+  const handleCancelClick = () => {
+    setCancelError("");
+    setShowCancelModal(true);
+  };
 
+  const handleCancelConfirm = async () => {
     setCancelling(true);
+    setCancelError("");
+
     try {
       const data = await cancelOrder(orderNumber);
 
-      if (!data.error) {
-        setOrder((prev) => ({
-          ...prev,
-          status: "CANCELLED",
-          statusLabel: "Cancelled",
-          timeline: prev.timeline.map((s) => ({
-            ...s,
-            completed: false,
-            current: s.status === "CANCELLED",
-          })),
-        }));
+      if (data.error) {
+        setCancelError(data.error);
+        setCancelling(false);
+        return;
       }
-    } catch {
-      // ignore
+
+      // Success — update local state
+      setOrder((prev) => ({
+        ...prev,
+        status: "CANCELLED",
+        statusLabel: "Cancelled",
+        timeline: prev.timeline.map((s) => ({
+          ...s,
+          completed: false,
+          current: s.status === "CANCELLED",
+        })),
+      }));
+      setShowCancelModal(false);
+    } catch (err) {
+      setCancelError(err.message || "Failed to cancel order. Please try again.");
     } finally {
       setCancelling(false);
     }
+  };
+
+  const handleCloseModal = () => {
+    if (cancelling) return;
+    setShowCancelModal(false);
+    setCancelError("");
   };
 
   const statusColors = {
@@ -127,7 +146,7 @@ export default function OrderDetailClient() {
     );
   }
 
-  const canCancel = ["PENDING", "CONFIRMED"].includes(order.status);
+  const canCancel = ["PENDING", "CONFIRMED", "PROCESSING"].includes(order.status);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -148,11 +167,11 @@ export default function OrderDetailClient() {
           </span>
           {canCancel && (
             <button
-              onClick={handleCancel}
+              onClick={handleCancelClick}
               disabled={cancelling}
               className="text-sm text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
             >
-              {cancelling ? "Cancelling..." : "Cancel Order"}
+              Cancel Order
             </button>
           )}
         </div>
@@ -266,6 +285,64 @@ export default function OrderDetailClient() {
           ← Back to My Orders
         </Link>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(0, 0, 0, 0.5)" }}
+          onClick={handleCloseModal}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Cancel order confirmation"
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold mb-2">Cancel Order</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to cancel order <strong>{order.orderNumber}</strong>?
+              This action cannot be undone.
+            </p>
+
+            {cancelError && (
+              <div className="mb-4 p-3 rounded-lg text-sm bg-red-50 text-red-700 border border-red-200">
+                {cancelError}
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleCloseModal}
+                disabled={cancelling}
+                className="px-4 py-2 text-sm font-medium rounded-lg border transition-colors disabled:opacity-50"
+                style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}
+              >
+                Keep Order
+              </button>
+              <button
+                onClick={handleCancelConfirm}
+                disabled={cancelling}
+                className="px-4 py-2 text-sm font-medium rounded-lg text-white transition-colors disabled:opacity-50"
+                style={{ background: cancelling ? "#9ca3af" : "#dc2626" }}
+              >
+                {cancelling ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Cancelling...
+                  </span>
+                ) : (
+                  "Yes, Cancel Order"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -644,7 +644,7 @@ export async function cancelOrder(orderId, userId, reason) {
   }
 
   // Validate status allows cancellation
-  if (!["PENDING", "CONFIRMED"].includes(order.orderStatus)) {
+  if (!["PENDING", "CONFIRMED", "PROCESSING"].includes(order.orderStatus)) {
     throw new Error(`Cannot cancel order with status: ${order.orderStatus}`);
   }
 
@@ -710,4 +710,29 @@ export async function cancelOrder(orderId, userId, reason) {
     where: { id: updatedOrder.id },
     include: { items: true },
   });
+}
+
+/**
+ * Cancel order by order number (customer-facing)
+ * @param {string} orderNumber - Human-readable order number
+ * @param {string} userId - Logged-in user ID (for ownership check)
+ * @param {string} [reason] - Cancellation reason
+ * @returns {Promise<Object>} Updated order
+ */
+export async function cancelOrderByNumber(orderNumber, userId, reason) {
+  const order = await prisma.order.findUnique({
+    where: { orderNumber },
+    select: { id: true, userId: true },
+  });
+
+  if (!order) {
+    throw new Error("Order not found");
+  }
+
+  // Ownership check — logged-in user can only cancel their own orders
+  if (userId && order.userId && order.userId !== userId) {
+    throw new Error("Unauthorized");
+  }
+
+  return cancelOrder(order.id, userId, reason);
 }

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { signup } from "@/lib/api/auth";
+import { validatePassword, getPasswordStrength } from "@/validators/auth.validators";
 
 export default function SignupForm() {
   const router = useRouter();
@@ -21,11 +22,32 @@ export default function SignupForm() {
   const [serverError, setServerError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: "", color: "" });
+  const passwordTimerRef = useRef(null);
+
+  // Real-time password validation (debounced 300ms)
+  useEffect(() => {
+    if (passwordTimerRef.current) clearTimeout(passwordTimerRef.current);
+
+    passwordTimerRef.current = setTimeout(() => {
+      if (formData.password) {
+        const error = validatePassword(formData.password);
+        setErrors((prev) => ({ ...prev, password: error || "" }));
+        setPasswordStrength(getPasswordStrength(formData.password));
+      } else {
+        setPasswordStrength({ score: 0, label: "", color: "" });
+      }
+    }, 300);
+
+    return () => {
+      if (passwordTimerRef.current) clearTimeout(passwordTimerRef.current);
+    };
+  }, [formData.password]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) {
+    if (errors[name] && name !== "password") {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
     if (serverError) {
@@ -50,10 +72,9 @@ export default function SignupForm() {
       newErrors.email = "Invalid email address";
     }
 
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) {
+      newErrors.password = passwordError;
     }
 
     if (!formData.confirmPassword) {
@@ -65,6 +86,15 @@ export default function SignupForm() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const isPasswordValid = formData.password && !validatePassword(formData.password);
+  const isFormValid =
+    formData.firstName.length >= 2 &&
+    formData.lastName.length >= 2 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
+    isPasswordValid &&
+    formData.password === formData.confirmPassword &&
+    formData.confirmPassword.length > 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -165,17 +195,41 @@ export default function SignupForm() {
               disabled={isLoading}
             />
 
-            <Input
-              label="Password"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="••••••••"
-              error={errors.password}
-              required
-              disabled={isLoading}
-            />
+            <div>
+              <Input
+                label="Password"
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                error={errors.password}
+                required
+                disabled={isLoading}
+              />
+              {/* Password strength indicator */}
+              {formData.password && passwordStrength.score > 0 && (
+                <div className="mt-2">
+                  <div className="flex gap-1 mb-1">
+                    {[1, 2, 3, 4].map((i) => (
+                      <div
+                        key={i}
+                        className="h-1 flex-1 rounded-full transition-colors duration-300"
+                        style={{
+                          background:
+                            i <= passwordStrength.score
+                              ? passwordStrength.color
+                              : "var(--border)",
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs font-medium" style={{ color: passwordStrength.color }}>
+                    {passwordStrength.label}
+                  </p>
+                </div>
+              )}
+            </div>
 
             <Input
               label="Confirm Password"
@@ -194,6 +248,7 @@ export default function SignupForm() {
               isLoading={isLoading}
               className="btn-full"
               size="lg"
+              disabled={!isFormValid || isLoading}
             >
               Create Account
             </Button>
