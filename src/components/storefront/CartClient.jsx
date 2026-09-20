@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCart } from "@/features/cart/CartProvider";
 import { formatPrice } from "@/lib/utils";
 import { getShippingRules } from "@/lib/api/checkout";
@@ -80,6 +81,7 @@ export default function CartClient() {
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <path
             strokeLinecap="round"
@@ -124,11 +126,15 @@ export default function CartClient() {
                       style={{ background: "var(--surface-soft)" }}
                     >
                       {product.image ? (
-                        <img
-                          src={getOptimizedUrl(product.image, 200)}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={getOptimizedUrl(product.image, 200)}
+                            alt={product.name}
+                            fill
+                            sizes="80px"
+                            className="object-cover"
+                          />
+                        </div>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center" style={{ color: "var(--text-muted)" }}>
                           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,6 +190,7 @@ export default function CartClient() {
                             style={{ color: "var(--text-secondary)" }}
                             onMouseEnter={(e) => !e.target.disabled && (e.target.style.background = "var(--surface-soft)")}
                             onMouseLeave={(e) => e.target.style.background = "transparent"}
+                            aria-label="Decrease quantity"
                           >
                             -
                           </button>
@@ -199,6 +206,7 @@ export default function CartClient() {
                             style={{ color: "var(--text-secondary)" }}
                             onMouseEnter={(e) => !e.target.disabled && (e.target.style.background = "var(--surface-soft)")}
                             onMouseLeave={(e) => e.target.style.background = "transparent"}
+                            aria-label="Increase quantity"
                           >
                             +
                           </button>

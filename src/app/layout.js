@@ -1,8 +1,23 @@
 import "./globals.css";
+import { Archivo, Roboto } from "next/font/google";
 import SessionProvider from "@/components/providers/SessionProvider";
 import CartProvider from "@/features/cart/CartProvider";
 import CartToast from "@/components/storefront/CartToast";
 import { SettingsProvider } from "@/features/cms/settings-context";
+
+const archivo = Archivo({
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-display",
+});
+
+const roboto = Roboto({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  display: "swap",
+  variable: "--font-sans",
+});
 
 export const metadata = {
   title: "WEJ Shoes - Premium Footwear",
@@ -11,7 +26,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${archivo.variable} ${roboto.variable}`}>
       <body>
         <a
           href="#main-content"

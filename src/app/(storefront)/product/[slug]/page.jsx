@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductBySlug, getAllProductSlugs } from "@/features/catalog/product.service";
-import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { logError } from "@/lib/logger";
 import ProductGallery from "@/components/storefront/ProductGallery";
 import RelatedProducts from "@/components/storefront/RelatedProducts";
@@ -94,12 +93,8 @@ export default async function ProductPage({ params, searchParams }) {
     ? variants.find((v) => v.id === variantIdFromUrl) || firstVariant
     : firstVariant;
 
-  const optimizedImages = images.map((img) => ({
-    ...img,
-    imageUrl: img.cloudinaryPublicId
-      ? getCloudinaryUrl(img.cloudinaryPublicId, { width: 800, height: 800 })
-      : img.imageUrl,
-  }));
+  // Pass raw images to gallery — it handles per-size optimization
+  // optimizedImages removed: gallery generates its own sized URLs
 
   const price = variants[0]?.salePrice
     ? Number(variants[0].salePrice)
@@ -160,7 +155,7 @@ export default async function ProductPage({ params, searchParams }) {
         <div className="grid md:grid-cols-2 gap-8 md:gap-12">
           {/* Left - Gallery */}
           <div>
-            <ProductGallery images={optimizedImages} productName={product.name} />
+            <ProductGallery images={images} productName={product.name} />
           </div>
 
           {/* Right - Info */}

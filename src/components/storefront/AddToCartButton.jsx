@@ -95,6 +95,7 @@ export default function AddToCartButton({ variant, product, disabled }) {
               disabled={quantity <= 1 || isAdding}
               className="w-10 h-10 flex items-center justify-center text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ color: "var(--text-primary)" }}
+              aria-label="Decrease quantity"
             >
               -
             </button>
@@ -112,6 +113,7 @@ export default function AddToCartButton({ variant, product, disabled }) {
               disabled={quantity >= maxStock || isAdding}
               className="w-10 h-10 flex items-center justify-center text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ color: "var(--text-primary)" }}
+              aria-label="Increase quantity"
             >
               +
             </button>

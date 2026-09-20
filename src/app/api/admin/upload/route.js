@@ -3,7 +3,13 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { uploadToCloudinary } from "@/lib/cloudinary-upload";
 import { logError } from "@/lib/logger";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 /**
@@ -29,7 +35,7 @@ export async function POST(request) {
 
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: "Invalid file type. Only JPG, PNG, WebP, and GIF are allowed" },
+        { error: "Invalid file type. Only JPG, PNG, WebP, GIF, and AVIF are allowed" },
         { status: 400 }
       );
     }

@@ -46,6 +46,7 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 style={{ color: "var(--text-muted)" }}
                 className="hover:opacity-80 transition-opacity"
+                aria-label="Follow us on Instagram"
               >
                 <svg
                   className="w-5 h-5"
@@ -61,6 +62,7 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 style={{ color: "var(--text-muted)" }}
                 className="hover:opacity-80 transition-opacity"
+                aria-label="Follow us on Facebook"
               >
                 <svg
                   className="w-5 h-5"
@@ -76,6 +78,7 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 style={{ color: "var(--text-muted)" }}
                 className="hover:opacity-80 transition-opacity"
+                aria-label="Follow us on X"
               >
                 <svg
                   className="w-5 h-5"

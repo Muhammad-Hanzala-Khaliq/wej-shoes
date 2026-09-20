@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
+import Image from "next/image";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
 
-function getOptimizedUrl(url, width) {
-  if (!url || !url.includes("cloudinary")) return url;
-  return url.replace("/upload/", `/upload/w_${width},f_auto,q_auto/`);
+// Preload helper — triggers browser preload for next/prev images
+function preloadImage(src) {
+  if (!src) return;
+  const link = document.createElement("link");
+  link.rel = "prefetch";
+  link.as = "image";
+  link.href = src;
+  document.head.appendChild(link);
 }
 
 export default function ProductGallery({ images = [], productName }) {
@@ -13,25 +20,57 @@ export default function ProductGallery({ images = [], productName }) {
       ? images.findIndex((img) => img.isPrimary)
       : 0
   );
-  const carouselRef = useRef(null);
 
-  const scrollToIndex = useCallback(
-    (index) => {
-      if (!carouselRef.current) return;
-      const container = carouselRef.current;
-      const child = container.children[index];
-      if (child) {
-        const scrollLeft = child.offsetLeft - container.offsetLeft;
-        container.scrollTo({ left: scrollLeft, behavior: "smooth" });
-      }
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const mainImageRef = useRef(null);
+
+  // Get the current image URL (optimized)
+  const getImageUrl = useCallback(
+    (index, size = "large") => {
+      const img = images[index];
+      if (!img) return "";
+      const dims = size === "thumb" ? { width: 200, height: 200 } : { width: 800, height: 800 };
+      return getCloudinaryUrl(img.imageUrl || img.url, dims);
     },
-    []
+    [images]
   );
 
-  const handleDotClick = (index) => {
-    setSelectedIndex(index);
-    scrollToIndex(index);
-  };
+  // Touch handlers for mobile swipe
+  const handleTouchStart = useCallback((e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchMove = useCallback((e) => {
+    touchEndX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    const deltaX = touchStartX.current - touchEndX.current;
+    const minSwipe = 50;
+
+    if (Math.abs(deltaX) < minSwipe) return;
+
+    if (deltaX > 0 && selectedIndex < images.length - 1) {
+      // Swiped left → next image
+      setSelectedIndex((prev) => prev + 1);
+    } else if (deltaX < 0 && selectedIndex > 0) {
+      // Swiped right → prev image
+      setSelectedIndex((prev) => prev - 1);
+    }
+  }, [selectedIndex, images.length]);
+
+  // Thumbnail click handler
+  const handleThumbnailClick = useCallback(
+    (index) => {
+      setSelectedIndex(index);
+      // Prefetch adjacent images
+      if (index > 0) preloadImage(getImageUrl(index - 1, "large"));
+      if (index < images.length - 1) preloadImage(getImageUrl(index + 1, "large"));
+    },
+    [getImageUrl, images.length]
+  );
 
   if (images.length === 0) {
     return (
@@ -47,63 +86,116 @@ export default function ProductGallery({ images = [], productName }) {
   }
 
   return (
-    <div>
-      {/* Desktop: 2-column grid */}
-      <div className="hidden md:grid grid-cols-2 gap-2">
-        {images.map((image, index) => (
-          <div
-            key={index}
-            className="aspect-square overflow-hidden cursor-pointer"
-            style={{ background: "var(--surface-soft)" }}
-            onClick={() => setSelectedIndex(index)}
-          >
-            <img
-              src={getOptimizedUrl(image.imageUrl, 600)}
-              alt={image.altText || `${productName} ${index + 1}`}
-              className="w-full h-full object-cover"
-              loading={index > 1 ? "lazy" : "eager"}
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Mobile: single image carousel */}
-      <div className="md:hidden">
+    <div className="space-y-3">
+      {/* Desktop: Main image + thumbnail strip (hidden on mobile) */}
+      <div className="hidden md:block">
+        {/* Main image */}
         <div
-          ref={carouselRef}
-          className="flex overflow-x-auto snap-x snap-mandatory"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
+          className="relative aspect-square overflow-hidden"
+          style={{ borderRadius: "var(--radius-lg)", background: "var(--surface-soft)" }}
         >
-          {images.map((image, index) => (
-            <div
-              key={index}
-              className="flex-shrink-0 w-full snap-center"
-            >
-              <div
-                className="aspect-square overflow-hidden"
-                style={{ background: "var(--surface-soft)" }}
-              >
-                <img
-                  src={getOptimizedUrl(image.imageUrl, 800)}
-                  alt={image.altText || `${productName} ${index + 1}`}
-                  className="w-full h-full object-cover"
-                  loading={index === 0 ? "eager" : "lazy"}
-                />
-              </div>
-            </div>
-          ))}
+          <Image
+            key={selectedIndex}
+            src={getImageUrl(selectedIndex, "large")}
+            alt={images[selectedIndex]?.altText || productName || "Product image"}
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover transition-opacity duration-200"
+            priority={selectedIndex === 0}
+          />
         </div>
 
-        {/* Dot pagination */}
+        {/* Thumbnail strip below */}
         {images.length > 1 && (
-          <div className="flex justify-center gap-2 mt-4">
-            {images.map((_, index) => (
+          <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+            {images.map((img, index) => (
               <button
                 key={index}
-                onClick={() => handleDotClick(index)}
-                className="w-2 h-2 rounded-full transition-all duration-200"
+                onClick={() => handleThumbnailClick(index)}
+                className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all duration-200"
                 style={{
-                  background: index === selectedIndex ? "var(--ink)" : "var(--border-strong)",
+                  border: selectedIndex === index
+                    ? "2px solid var(--ink)"
+                    : "2px solid transparent",
+                  opacity: selectedIndex === index ? 1 : 0.6,
+                }}
+                onMouseEnter={() => {
+                  // Prefetch on hover
+                  if (index !== selectedIndex) preloadImage(getImageUrl(index, "large"));
+                }}
+              >
+                <Image
+                  src={getImageUrl(index, "thumb")}
+                  alt={img.altText || `${productName} ${index + 1}`}
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
+                {/* Primary badge on first image */}
+                {img.isPrimary && index === 0 && (
+                  <span
+                    className="absolute top-0.5 left-0.5 px-1 text-[10px] font-medium rounded"
+                    style={{
+                      background: "var(--ink)",
+                      color: "var(--bg)",
+                    }}
+                  >
+                    ★
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Mobile: Swipeable image + dots (hidden on desktop) */}
+      <div className="md:hidden">
+        <div
+          ref={mainImageRef}
+          className="relative aspect-square overflow-hidden select-none"
+          style={{ borderRadius: "var(--radius-lg)", background: "var(--surface-soft)" }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <Image
+            key={selectedIndex}
+            src={getImageUrl(selectedIndex, "large")}
+            alt={images[selectedIndex]?.altText || productName || "Product image"}
+            fill
+            sizes="100vw"
+            className="object-cover transition-opacity duration-200"
+            priority={selectedIndex === 0}
+          />
+
+          {/* Swipe hint on first image */}
+          {images.length > 1 && selectedIndex === 0 && (
+            <div
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full text-xs font-medium pointer-events-none"
+              style={{
+                background: "rgba(0, 0, 0, 0.5)",
+                color: "white",
+              }}
+            >
+              ← Swipe →
+            </div>
+          )}
+        </div>
+
+        {/* Dots — single source of truth: selectedIndex */}
+        {images.length > 1 && (
+          <div className="flex justify-center gap-2 mt-3">
+            {images.map((img, index) => (
+              <button
+                key={index}
+                onClick={() => setSelectedIndex(index)}
+                className="transition-all duration-200"
+                style={{
+                  width: selectedIndex === index ? 24 : 8,
+                  height: 8,
+                  borderRadius: 4,
+                  background: selectedIndex === index ? "var(--ink)" : "var(--border)",
                 }}
                 aria-label={`Go to image ${index + 1}`}
               />

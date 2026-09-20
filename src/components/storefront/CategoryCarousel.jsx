@@ -2,6 +2,8 @@
 
 import { useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
 
 export default function CategoryCarousel({ categories }) {
   const scrollRef = useRef(null);
@@ -53,14 +55,17 @@ export default function CategoryCarousel({ categories }) {
             className="flex flex-col items-center gap-3 flex-shrink-0 group"
           >
             <div
-              className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden transition-transform duration-300 group-hover:scale-105"
+              className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden transition-transform duration-300 group-hover:scale-105 relative"
               style={{ background: "var(--surface-soft)" }}
             >
               {category.displayImage ? (
-                <img
-                  src={category.displayImage}
+                <Image
+                  src={getCloudinaryUrl(category.displayImage, { width: 320, height: 320 })}
                   alt={category.name}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="160px"
+                  className="object-cover"
+                  loading="lazy"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">

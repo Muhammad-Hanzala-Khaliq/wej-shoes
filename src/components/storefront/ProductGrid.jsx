@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import ProductCard from "./ProductCard";
 import { formatPrice } from "@/lib/utils";
 
@@ -73,11 +74,15 @@ function ProductListItem({ product }) {
         style={{ background: "var(--surface-soft)" }}
       >
         {primaryImage ? (
-          <img
-            src={primaryImage.imageUrl}
-            alt={product.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+          <div className="relative w-full h-full">
+            <Image
+              src={primaryImage.imageUrl}
+              alt={product.name}
+              fill
+              sizes="(max-width: 768px) 160px, 224px"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center" style={{ color: "var(--text-muted)" }}>
             <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">

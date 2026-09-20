@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import QuickAddModal from "./QuickAddModal";
 import { formatPrice } from "@/lib/utils";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
 
 const MAX_VISIBLE_SIZES = 6;
 
@@ -66,6 +68,9 @@ export default function ProductCard({ product, clean = false }) {
   }
 
   const currentImage = images[imageIndex] || primaryImage;
+  const currentImageUrl = currentImage
+    ? getCloudinaryUrl(currentImage.imageUrl, { width: 600, height: 600 })
+    : null;
 
   if (clean) {
     return (
@@ -79,11 +84,14 @@ export default function ProductCard({ product, clean = false }) {
           className="aspect-square relative overflow-hidden mb-3"
           style={{ background: "var(--surface-soft)" }}
         >
-          {currentImage ? (
-            <img
-              src={currentImage.imageUrl}
+          {currentImageUrl ? (
+            <Image
+              src={currentImageUrl}
               alt={product.name}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-cover"
+              loading="lazy"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center" style={{ color: "var(--text-muted)" }}>
@@ -231,11 +239,14 @@ export default function ProductCard({ product, clean = false }) {
           className="aspect-square relative overflow-hidden"
           style={{ background: "var(--surface-soft)" }}
         >
-          {currentImage ? (
-            <img
-              src={currentImage.imageUrl}
+          {currentImageUrl ? (
+            <Image
+              src={currentImageUrl}
               alt={product.name}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-cover"
+              loading="lazy"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center" style={{ color: "var(--text-muted)" }}>

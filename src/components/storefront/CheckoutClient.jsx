@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -408,11 +409,15 @@ export default function CheckoutClient() {
                         style={{ background: "var(--surface)" }}
                       >
                         {itemImage && (
-                          <img
-                            src={getOptimizedUrl(itemImage, 120)}
-                            alt={itemName}
-                            className="w-full h-full object-cover"
-                          />
+                          <div className="relative w-full h-full">
+                            <Image
+                              src={getOptimizedUrl(itemImage, 120)}
+                              alt={itemName}
+                              fill
+                              sizes="56px"
+                              className="object-cover"
+                            />
+                          </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">

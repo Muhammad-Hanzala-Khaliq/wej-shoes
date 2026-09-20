@@ -22,6 +22,7 @@ export default function CartBadge() {
       href="/cart"
       data-cart-target
       className="relative p-2 text-gray-600 hover:text-black transition-colors"
+      aria-label={`Shopping cart${cart.itemCount > 0 ? `, ${cart.itemCount} items` : ""}`}
     >
       <svg
         className={`w-5 h-5 ${bump ? "cart-bump" : ""}`}

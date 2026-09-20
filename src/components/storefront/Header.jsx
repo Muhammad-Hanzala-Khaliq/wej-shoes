@@ -343,6 +343,7 @@ export default function Header() {
               onClick={() => setSearchOpen(true)}
               className="p-2"
               style={{ color: "var(--text-secondary)" }}
+              aria-label="Search products"
             >
               <svg
                 className="w-5 h-5"
@@ -472,6 +473,7 @@ export default function Header() {
               onClick={() => setMenuOpen(true)}
               className="md:hidden p-2"
               style={{ color: "var(--text-secondary)" }}
+              aria-label="Open menu"
             >
               <svg
                 className="w-6 h-6"
@@ -505,6 +507,9 @@ export default function Header() {
         className={`fixed inset-y-0 right-0 z-50 w-80 max-w-[85vw] bg-white shadow-2xl transform transition-transform duration-300 ease-out md:hidden ${
           menuOpen ? "translate-x-0" : "translate-x-full"
         }`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation menu"
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <span className="font-semibold text-gray-900">Menu</span>

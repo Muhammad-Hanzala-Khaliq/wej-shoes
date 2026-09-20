@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import AddToCartButton from "@/components/storefront/AddToCartButton";
 import StockIndicator from "@/components/storefront/StockIndicator";
@@ -243,6 +244,7 @@ export default function ProductInfoPanel({ product, variants, initialVariant }) 
           <button
             onClick={() => toggleAccordion("details")}
             className="flex items-center justify-between w-full py-4 text-left"
+            aria-expanded={openAccordion === "details"}
           >
             <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
               Product Details
@@ -272,6 +274,7 @@ export default function ProductInfoPanel({ product, variants, initialVariant }) 
           <button
             onClick={() => toggleAccordion("shipping")}
             className="flex items-center justify-between w-full py-4 text-left"
+            aria-expanded={openAccordion === "shipping"}
           >
             <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
               Shipping & Returns
@@ -314,6 +317,9 @@ export default function ProductInfoPanel({ product, variants, initialVariant }) 
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: "rgba(0, 0, 0, 0.6)" }}
           onClick={() => setShowSizeChart(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Size chart"
         >
           <div
             className="relative bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-auto"
@@ -329,11 +335,15 @@ export default function ProductInfoPanel({ product, variants, initialVariant }) 
               </svg>
             </button>
 
-            <img
-              src="/size-chart.png"
-              alt="Size Chart - Women Shoes"
-              className="w-full h-auto rounded-lg"
-            />
+            <div className="relative w-full aspect-[4/3]">
+              <Image
+                src="/size-chart.png"
+                alt="Shoe size chart showing measurements in centimeters and corresponding sizes"
+                fill
+                sizes="(max-width: 640px) 100vw, 512px"
+                className="object-contain rounded-lg"
+              />
+            </div>
           </div>
         </div>
       )}

@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useCart } from "@/features/cart/CartProvider";
 import { flyToCart } from "@/lib/fly-to-cart";
 import { formatPrice } from "@/lib/utils";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
 
 export default function QuickAddModal({ product, open, onClose, initialSize }) {
   const router = useRouter();
@@ -140,6 +142,9 @@ export default function QuickAddModal({ product, open, onClose, initialSize }) {
     <div
       className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Quick add to cart"
     >
       <div
         className="bg-white rounded-lg w-full max-w-3xl max-h-[90vh] overflow-hidden grid md:grid-cols-2"
@@ -148,14 +153,21 @@ export default function QuickAddModal({ product, open, onClose, initialSize }) {
         {/* Left: images */}
         <div className="overflow-y-auto max-h-[90vh] bg-white">
           {images.length > 0 ? (
-            images.map((img, i) => (
-              <img
-                key={img.id || i}
-                src={img.imageUrl}
-                alt={`${product.name} ${i + 1}`}
-                className="w-full object-cover"
-              />
-            ))
+            images.map((img, i) => {
+              const imgSrc = getCloudinaryUrl(img.imageUrl, { width: 600, height: 600 });
+              return (
+                <div key={img.id || i} className="relative w-full aspect-square">
+                  <Image
+                    src={imgSrc}
+                    alt={`${product.name} ${i + 1}`}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              );
+            })
           ) : (
             <div className="w-full aspect-square flex items-center justify-center bg-gray-100 text-gray-400">
               <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">

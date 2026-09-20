@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import ProductCard from "@/components/storefront/ProductCard";
 import CategoryCarousel from "@/components/storefront/CategoryCarousel";
 import {
@@ -7,6 +8,7 @@ import {
   getFeaturedProducts,
   getNewArrivals,
 } from "@/features/cms/homepage.service";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
 
 function serializeDecimal(data) {
   return JSON.parse(
@@ -21,11 +23,6 @@ function serializeDecimal(data) {
       return value;
     }),
   );
-}
-
-function heroUrl(url, width) {
-  if (!url || !url.includes("cloudinary")) return url;
-  return url.replace("/upload/", `/upload/w_${width},q_auto,f_auto/`);
 }
 
 export const metadata = {
@@ -52,22 +49,29 @@ export default async function HomePage() {
     heroContent?.subtitle ||
     "Premium footwear crafted for comfort and confidence.";
 
+  // Optimize hero image source — max 1920px wide for next/image
+  const heroSrc = heroImageUrl
+    ? getCloudinaryUrl(heroImageUrl, { width: 1920, height: 1080 })
+    : null;
+
   return (
     <div>
-      {/* SECTION 1: HERO */}
+      {/* SECTION 1: HERO — priority for LCP */}
       <section className="relative w-full h-[calc(100svh-4rem)] min-h-screen overflow-hidden">
         <div className="absolute inset-0">
-          <img
-            src={heroUrl(heroImageUrl, 1920)}
-            srcSet={[640, 1024, 1600, 2000]
-              .map((w) => `${heroUrl(heroImageUrl, w)} ${w}w`)
-              .join(", ")}
-            sizes="100vw"
-            alt={heroTitle}
-            className="absolute inset-0 w-full h-full object-cover object-center"
-            loading="eager"
-            fetchPriority="high"
-          />
+          {heroSrc ? (
+            <Image
+              src={heroSrc}
+              alt={heroTitle}
+              fill
+              priority
+              sizes="100vw"
+              className="absolute inset-0 object-cover object-center"
+              quality={85}
+            />
+          ) : (
+            <div className="w-full h-full" style={{ background: "var(--ink)" }} />
+          )}
 
           {/* Gradient overlay */}
           <div
@@ -139,19 +143,25 @@ export default async function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 h-full">
           {/* Men */}
           <div className="relative overflow-hidden">
-            <img
+            <Image
               src="/beyond-the-trend-1.jpg"
               alt="Men's Collection"
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+              quality={80}
             />
           </div>
 
           {/* Women */}
           <div className="relative overflow-hidden">
-            <img
+            <Image
               src="/beyond-the-trend-2.jpg"
               alt="Women's Collection"
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+              quality={80}
             />
           </div>
         </div>

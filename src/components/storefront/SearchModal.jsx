@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { getRecentlyViewed, clearRecentlyViewed } from "@/lib/recently-viewed";
 import { searchProducts } from "@/lib/api/search";
@@ -78,6 +79,9 @@ export default function SearchModal({ open, onClose }) {
       className="fixed inset-0 z-[60] flex items-start justify-center pt-[8vh]"
       style={{ background: "rgba(0,0,0,0.4)" }}
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search products"
     >
       <div
         className="w-full max-w-2xl mx-4 rounded-xl overflow-hidden"
@@ -97,6 +101,7 @@ export default function SearchModal({ open, onClose }) {
             placeholder="Search"
             className="flex-1 bg-transparent outline-none text-base"
             style={{ color: "var(--text-primary)" }}
+            aria-label="Search products"
           />
           <button
             onClick={onClose}
@@ -141,11 +146,15 @@ export default function SearchModal({ open, onClose }) {
                       >
                         <div className="aspect-square rounded-lg overflow-hidden" style={{ background: "var(--surface-soft)" }}>
                           {item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                            />
+                            <div className="relative w-full h-full">
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.name}
+                                fill
+                                sizes="128px"
+                                className="object-cover group-hover:scale-105 transition-transform duration-200"
+                              />
+                            </div>
                           ) : (
                             <div className="w-full h-full flex items-center justify-center" style={{ color: "var(--text-muted)" }}>
                               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,11 +214,15 @@ export default function SearchModal({ open, onClose }) {
                       >
                         <div className="aspect-square rounded-lg overflow-hidden" style={{ background: "var(--surface-soft)" }}>
                           {item.imageUrl ? (
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                            />
+                            <div className="relative w-full h-full">
+                              <Image
+                                src={item.imageUrl}
+                                alt={item.name}
+                                fill
+                                sizes="128px"
+                                className="object-cover group-hover:scale-105 transition-transform duration-200"
+                              />
+                            </div>
                           ) : (
                             <div className="w-full h-full flex items-center justify-center" style={{ color: "var(--text-muted)" }}>
                               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">

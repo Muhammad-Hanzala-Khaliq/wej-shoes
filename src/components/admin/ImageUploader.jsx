@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { uploadImage } from "@/lib/api/admin/upload";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
 const MAX_SIZE = 5 * 1024 * 1024;
 
 /**
@@ -22,7 +22,7 @@ export default function ImageUploader({ images = [], onChange }) {
     setUploadError("");
     const validFiles = Array.from(files).filter((file) => {
       if (!ALLOWED_TYPES.includes(file.type)) {
-        setUploadError("Only JPG, PNG, WebP, and GIF are allowed");
+        setUploadError("Only JPG, PNG, WebP, GIF, and AVIF are allowed");
         return false;
       }
       if (file.size > MAX_SIZE) {
