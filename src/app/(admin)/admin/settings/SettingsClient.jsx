@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { updateSettings } from "@/lib/api/admin/cms";
 
 export default function SettingsClient({ initialSettings }) {
+  const router = useRouter();
   const [settings, setSettings] = useState({
     storeName: initialSettings?.storeName || "",
     logoUrl: initialSettings?.logoUrl || "",
@@ -17,6 +19,19 @@ export default function SettingsClient({ initialSettings }) {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+
+  // Resync local state when router.refresh() delivers new props from server
+  useEffect(() => {
+    setSettings({
+      storeName: initialSettings?.storeName || "",
+      logoUrl: initialSettings?.logoUrl || "",
+      supportEmail: initialSettings?.supportEmail || "",
+      phone: initialSettings?.phone || "",
+      whatsappNumber: initialSettings?.whatsappNumber || "",
+      currency: initialSettings?.currency || "PKR",
+      codEnabled: initialSettings?.codEnabled ?? true,
+    });
+  }, [initialSettings]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -35,6 +50,7 @@ export default function SettingsClient({ initialSettings }) {
     try {
       await updateSettings(settings);
       setMessage({ type: "success", text: "Settings saved successfully" });
+      router.refresh();
     } catch {
       setMessage({ type: "error", text: "An error occurred. Please try again." });
     } finally {

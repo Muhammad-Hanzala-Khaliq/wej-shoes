@@ -55,7 +55,10 @@ export default function CategoriesClient({ initialCategories, initialTotal, init
     setCategories((prev) => prev.filter((cat) => cat.id !== id));
 
     deleteCategory(id)
-      .then(() => showToast("Category deleted", "success"))
+      .then(() => {
+        showToast("Category deleted", "success");
+        router.refresh();
+      })
       .catch(() => {
         setCategories(previousCategories);
         showToast("Failed to delete category", "error");

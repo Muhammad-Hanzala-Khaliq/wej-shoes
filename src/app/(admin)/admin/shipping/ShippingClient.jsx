@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Pagination from "@/components/admin/Pagination";
@@ -27,6 +28,7 @@ const emptyRule = {
 };
 
 export default function ShippingClient({ initialRules, initialTotal, initialPage, initialTotalPages }) {
+  const router = useRouter();
   const [rules, setRules] = useState(initialRules);
   const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(initialPage);
@@ -97,7 +99,7 @@ export default function ShippingClient({ initialRules, initialTotal, initialPage
         setMessage({ type: "success", text: "Rule added" });
       }
       closeModal();
-      window.location.reload();
+      router.refresh();
     } catch {
       setMessage({ type: "error", text: "An error occurred" });
     } finally {
@@ -119,7 +121,7 @@ export default function ShippingClient({ initialRules, initialTotal, initialPage
   const handlePageChange = (newPage) => {
     const params = new URLSearchParams();
     if (newPage > 1) params.set("page", String(newPage));
-    window.location.href = `/admin/shipping?${params.toString()}`;
+    router.push(`/admin/shipping?${params.toString()}`);
   };
 
   const formatAmount = (rule) => {

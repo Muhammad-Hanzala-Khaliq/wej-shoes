@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import ImageUpload from "@/components/admin/ImageUpload";
@@ -30,6 +31,7 @@ const emptyBlock = {
 };
 
 export default function HomepageAdminClient({ initialBlocks }) {
+  const router = useRouter();
   const [blocks, setBlocks] = useState(initialBlocks);
   const [isSaving, setIsSaving] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -87,7 +89,7 @@ export default function HomepageAdminClient({ initialBlocks }) {
         setMessage({ type: "success", text: "Block added" });
       }
       closeModal();
-      window.location.reload();
+      router.refresh();
     } catch (err) {
       setMessage({ type: "error", text: err.message || "An error occurred" });
     } finally {
@@ -121,7 +123,7 @@ export default function HomepageAdminClient({ initialBlocks }) {
       await reorderHomepageBlocks(order);
       setBlocks(newBlocks);
     } catch {
-      window.location.reload();
+      router.refresh();
     }
   };
 

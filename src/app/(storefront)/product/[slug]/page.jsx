@@ -69,8 +69,9 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default async function ProductPage({ params }) {
+export default async function ProductPage({ params, searchParams }) {
   const { slug } = await params;
+  const { variant: variantIdFromUrl } = await searchParams;
   const product = await getProductBySlug(slug);
 
   if (!product) {
@@ -87,6 +88,11 @@ export default async function ProductPage({ params }) {
   const variants = serializedProduct.variants || [];
 
   const firstVariant = variants[0] || null;
+
+  // Use URL variant if provided and valid, else first variant
+  const initialVariant = variantIdFromUrl
+    ? variants.find((v) => v.id === variantIdFromUrl) || firstVariant
+    : firstVariant;
 
   const optimizedImages = images.map((img) => ({
     ...img,
@@ -162,7 +168,7 @@ export default async function ProductPage({ params }) {
             <ProductInfoPanel
               product={serializedProduct}
               variants={variants}
-              initialVariantId={firstVariant?.id || null}
+              initialVariant={initialVariant}
             />
           </div>
         </div>

@@ -1,29 +1,44 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import AddToCartButton from "@/components/storefront/AddToCartButton";
+import StockIndicator from "@/components/storefront/StockIndicator";
 import { addRecentlyViewed } from "@/lib/recently-viewed";
 import { formatPrice } from "@/lib/utils";
 
-export default function ProductInfoPanel({ product, variants, initialVariantId }) {
+export default function ProductInfoPanel({ product, variants, initialVariant }) {
+  const searchParams = useSearchParams();
   const [wishlist, setWishlist] = useState(false);
   const [openAccordion, setOpenAccordion] = useState(null);
   const [showSizeChart, setShowSizeChart] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
 
-  const findFirstInStock = () => {
+  // Determine initial variant: URL param > server prop > first in-stock > first
+  const resolveInitialVariant = () => {
+    const urlVariantId = searchParams.get("variant");
+    if (urlVariantId) {
+      const found = variants.find((v) => v.id === urlVariantId);
+      if (found) return found;
+    }
+    if (initialVariant) return initialVariant;
     return variants.find((v) => v.stockQuantity > 0 && v.status === "ACTIVE") || variants[0];
   };
 
-  const [selectedVariant, setSelectedVariant] = useState(() => {
-    if (initialVariantId) {
-      const v = variants.find((v) => v.id === initialVariantId);
-      if (v) return v;
-    }
-    return findFirstInStock();
-  });
+  const [selectedVariant, setSelectedVariant] = useState(resolveInitialVariant);
 
-  // Instant URL sync on mount — no re-render, no network request
+  // Sync variant from URL when searchParams change (e.g., browser back/forward)
+  useEffect(() => {
+    const urlVariantId = searchParams.get("variant");
+    if (urlVariantId) {
+      const variant = variants.find((v) => v.id === urlVariantId);
+      if (variant && variant.id !== selectedVariant?.id) {
+        setSelectedVariant(variant);
+      }
+    }
+  }, [searchParams, variants, selectedVariant?.id]);
+
+  // Ensure URL has variant param on mount
   useEffect(() => {
     if (!selectedVariant) return;
     if (!window.location.search.includes("variant=")) {
@@ -46,7 +61,7 @@ export default function ProductInfoPanel({ product, variants, initialVariantId }
     });
   }, [product.slug]);
 
-  // Handle size selection — instant URL bar update
+  // Handle size selection — update state + URL
   const handleSizeSelect = (size) => {
     const variant = variants.find((v) => String(v.size) === String(size));
     if (variant && variant.stockQuantity > 0) {
@@ -175,9 +190,10 @@ export default function ProductInfoPanel({ product, variants, initialVariantId }
 
       {/* Stock indicator */}
       {selectedVariant && (
-        <div className="text-sm" style={{ color: selectedVariant.stockQuantity > 0 ? "var(--text-muted)" : "var(--danger)" }}>
-          {selectedVariant.stockQuantity > 0 ? "In stock" : "Out of stock"}
-        </div>
+        <StockIndicator
+          variantId={selectedVariant.id}
+          initialStock={selectedVariant.stockQuantity}
+        />
       )}
 
       {/* Add to cart */}

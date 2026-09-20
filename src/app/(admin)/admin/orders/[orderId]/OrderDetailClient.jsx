@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatPrice } from "@/lib/utils";
 import { updateOrderStatus } from "@/lib/api/admin/orders";
 
@@ -35,10 +36,16 @@ const STATUS_COLORS = {
 };
 
 export default function OrderDetailClient({ initialOrder }) {
+  const router = useRouter();
   const [order, setOrder] = useState(initialOrder);
   const [updating, setUpdating] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [showCancel, setShowCancel] = useState(false);
+
+  // Resync local state when router.refresh() delivers new props from server
+  useEffect(() => {
+    setOrder(initialOrder);
+  }, [initialOrder]);
 
   const handleStatusUpdate = async (newStatus) => {
     if (newStatus === "CANCELLED") {
@@ -52,6 +59,7 @@ export default function OrderDetailClient({ initialOrder }) {
     try {
       const updated = await updateOrderStatus(order.id, newStatus);
       setOrder((prev) => ({ ...prev, ...updated }));
+      router.refresh();
     } catch {
       // ignore
     } finally {
@@ -66,6 +74,7 @@ export default function OrderDetailClient({ initialOrder }) {
       setOrder((prev) => ({ ...prev, ...updated }));
       setShowCancel(false);
       setCancelReason("");
+      router.refresh();
     } catch {
       // ignore
     } finally {

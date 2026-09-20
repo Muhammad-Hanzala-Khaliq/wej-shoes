@@ -106,7 +106,10 @@ export default function ProductsClient({
     setTotal((prev) => Math.max(0, prev - 1));
 
     deleteProduct(id)
-      .then(() => showToast("Product deleted", "success"))
+      .then(() => {
+        showToast("Product deleted", "success");
+        router.refresh();
+      })
       .catch(() => {
         setProducts(previousProducts);
         setTotal(previousTotal);
