@@ -46,10 +46,7 @@ export default function CartClient() {
 
   const handleRemove = (itemId) => {
     setRemovingId(itemId);
-    setTimeout(() => {
-      removeItem(itemId);
-      setRemovingId(null);
-    }, 300);
+    removeItem(itemId).then(() => setRemovingId(null));
   };
 
   if (isLoading) {

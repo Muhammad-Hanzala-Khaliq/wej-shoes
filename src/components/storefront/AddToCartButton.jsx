@@ -7,20 +7,24 @@ import { flyToCart } from "@/lib/fly-to-cart";
 export default function AddToCartButton({ variant, product, disabled }) {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const [quantityError, setQuantityError] = useState("");
   const { addToCart } = useCart();
   const btnRef = useRef(null);
 
   const maxStock = variant ? variant.stockQuantity : 0;
   const isDisabled = disabled || !variant || variant.stockQuantity === 0;
+  const isAddDisabled = isDisabled || isAdding;
 
   const handleDecrease = () => {
     setQuantityError("");
-    if (quantity > 1) setQuantity(quantity - 1);
+    if (!isAdding && quantity > 1) setQuantity(quantity - 1);
   };
 
   const handleIncrease = () => {
     setQuantityError("");
+    if (isAdding) return;
+
     if (quantity < maxStock) {
       setQuantity(quantity + 1);
     } else {
@@ -29,33 +33,48 @@ export default function AddToCartButton({ variant, product, disabled }) {
   };
 
   const handleAddToCart = async () => {
-    if (isDisabled) return;
+    if (isAddDisabled) return;
 
     setQuantityError("");
+    setIsAdding(true);
 
-    const hasSale = product?.salePrice && Number(product.salePrice) < Number(product.regularPrice);
-    const effectivePrice = hasSale ? Number(product.salePrice) : Number(product.regularPrice);
+    const hasSale =
+      product?.salePrice && Number(product.salePrice) < Number(product.regularPrice);
+    const effectivePrice = hasSale
+      ? Number(product.salePrice)
+      : Number(product.regularPrice);
 
-    // Fire all UI updates immediately — don't await
-    flyToCart({ imageUrl: product.images?.[0]?.imageUrl, sourceEl: btnRef.current });
-    addToCart(variant.id, quantity, {
-      productId: product.id,
-      productName: product.name,
-      slug: product.slug,
-      image: product.images?.[0]?.imageUrl,
-      color: variant.color,
-      size: variant.size,
-      sku: variant.sku,
-      stockQuantity: variant.stockQuantity,
-      effectivePrice,
-      regularPrice: product.regularPrice,
-      salePrice: product.salePrice,
-    });
-    setAdded(true);
-    setTimeout(() => {
-      setAdded(false);
-      setQuantity(1);
-    }, 2000);
+    try {
+      flyToCart({ imageUrl: product.images?.[0]?.imageUrl, sourceEl: btnRef.current });
+
+      const result = await addToCart(variant.id, quantity, {
+        productId: product.id,
+        productName: product.name,
+        slug: product.slug,
+        image: product.images?.[0]?.imageUrl,
+        color: variant.color,
+        size: variant.size,
+        sku: variant.sku,
+        stockQuantity: variant.stockQuantity,
+        effectivePrice,
+        regularPrice: product.regularPrice,
+        salePrice: product.salePrice,
+      });
+
+      if (result?.success) {
+        setAdded(true);
+        setTimeout(() => {
+          setAdded(false);
+          setQuantity(1);
+        }, 2000);
+      } else if (result?.error) {
+        setQuantityError(result.error);
+      }
+    } catch {
+      setQuantityError("Failed to add to cart");
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   return (
@@ -73,7 +92,7 @@ export default function AddToCartButton({ variant, product, disabled }) {
           >
             <button
               onClick={handleDecrease}
-              disabled={quantity <= 1}
+              disabled={quantity <= 1 || isAdding}
               className="w-10 h-10 flex items-center justify-center text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ color: "var(--text-primary)" }}
             >
@@ -90,7 +109,7 @@ export default function AddToCartButton({ variant, product, disabled }) {
             </span>
             <button
               onClick={handleIncrease}
-              disabled={quantity >= maxStock}
+              disabled={quantity >= maxStock || isAdding}
               className="w-10 h-10 flex items-center justify-center text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ color: "var(--text-primary)" }}
             >
@@ -102,25 +121,53 @@ export default function AddToCartButton({ variant, product, disabled }) {
           <button
             ref={btnRef}
             onClick={handleAddToCart}
-            disabled={isDisabled}
+            disabled={isAddDisabled}
             className="flex-1 h-10 rounded-full font-semibold text-sm transition-colors"
             style={{
               background: added
                 ? "var(--success)"
-                : isDisabled
+                : isAddDisabled
                   ? "var(--border)"
                   : "var(--ink)",
               color: "#fff",
-              cursor: isDisabled ? "not-allowed" : "pointer",
+              cursor: isAddDisabled ? "not-allowed" : "pointer",
             }}
             onMouseEnter={(e) => {
-              if (!isDisabled && !added) e.target.style.background = "var(--ink-hover)";
+              if (!isAddDisabled && !added) e.target.style.background = "var(--ink-hover)";
             }}
             onMouseLeave={(e) => {
-              if (!isDisabled && !added) e.target.style.background = "var(--ink)";
+              if (!isAddDisabled && !added) e.target.style.background = "var(--ink)";
             }}
           >
-            {added ? "Added ✓" : "Add to cart"}
+            {isAdding ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg
+                  className="animate-spin h-4 w-4"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Adding...
+              </span>
+            ) : added ? (
+              "Added ✓"
+            ) : (
+              "Add to cart"
+            )}
           </button>
         </div>
       )}
@@ -147,7 +194,9 @@ export default function AddToCartButton({ variant, product, disabled }) {
 
       {/* Error text */}
       {quantityError && (
-        <p className="text-xs" style={{ color: "var(--danger)" }}>{quantityError}</p>
+        <p className="text-xs" style={{ color: "var(--danger)" }}>
+          {quantityError}
+        </p>
       )}
     </div>
   );

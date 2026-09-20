@@ -229,7 +229,9 @@ export async function addToCart({ userId, sessionId, variantId, quantity = 1 }) 
   }
 
   if (variant.stockQuantity < quantity) {
-    throw new Error("Insufficient stock");
+    const err = new Error(`Only ${variant.stockQuantity} available in stock`);
+    err.maxQty = variant.stockQuantity;
+    throw err;
   }
 
   const cart = await getOrCreateCart({ userId, sessionId });
@@ -247,7 +249,14 @@ export async function addToCart({ userId, sessionId, variantId, quantity = 1 }) 
     const newQuantity = existingItem.quantity + quantity;
 
     if (newQuantity > variant.stockQuantity) {
-      throw new Error("Insufficient stock");
+      const available = variant.stockQuantity - existingItem.quantity;
+      const err = new Error(
+        available <= 0
+          ? `You already have the maximum (${variant.stockQuantity}) in your cart`
+          : `Only ${available} more available in stock`
+      );
+      err.maxQty = variant.stockQuantity;
+      throw err;
     }
 
     await prisma.cartItem.update({
@@ -292,7 +301,9 @@ export async function updateCartItemQuantity({ userId, sessionId, itemId, quanti
     await prisma.cartItem.delete({ where: { id: itemId } });
   } else {
     if (quantity > item.variant.stockQuantity) {
-      throw new Error("Insufficient stock");
+      const err = new Error(`Only ${item.variant.stockQuantity} available in stock`);
+      err.maxQty = item.variant.stockQuantity;
+      throw err;
     }
 
     await prisma.cartItem.update({

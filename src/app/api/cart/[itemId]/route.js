@@ -48,8 +48,11 @@ export async function PUT(request, { params }) {
   } catch (error) {
     logError("PUT /api/cart/[itemId]", error);
 
-    if (error.message === "Insufficient stock") {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error.maxQty !== undefined) {
+      return NextResponse.json(
+        { error: error.message, maxQty: error.maxQty },
+        { status: 400 }
+      );
     }
 
     if (error.message.includes("not found")) {
