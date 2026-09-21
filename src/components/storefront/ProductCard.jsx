@@ -115,7 +115,7 @@ export default function ProductCard({ product, clean = false }) {
           {images.length > 1 && (
             <button
               onClick={handlePrevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity z-10"
+              className="hidden min-[350px]:flex absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full items-center justify-center opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity z-10"
               style={{ background: "rgba(255,255,255,0.9)", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
               aria-label="Previous image"
             >
@@ -129,7 +129,7 @@ export default function ProductCard({ product, clean = false }) {
           {images.length > 1 && (
             <button
               onClick={handleNextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity z-10"
+              className="hidden min-[350px]:flex absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full items-center justify-center opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity z-10"
               style={{ background: "rgba(255,255,255,0.9)", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
               aria-label="Next image"
             >
@@ -267,7 +267,7 @@ export default function ProductCard({ product, clean = false }) {
           {images.length > 1 && (
             <button
               onClick={handlePrevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity z-10"
+              className="hidden min-[350px]:flex absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full items-center justify-center opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity z-10"
               style={{ background: "rgba(255,255,255,0.9)", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
               aria-label="Previous image"
             >
@@ -281,7 +281,7 @@ export default function ProductCard({ product, clean = false }) {
           {images.length > 1 && (
             <button
               onClick={handleNextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity z-10"
+              className="hidden min-[350px]:flex absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full items-center justify-center opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity z-10"
               style={{ background: "rgba(255,255,255,0.9)", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
               aria-label="Next image"
             >

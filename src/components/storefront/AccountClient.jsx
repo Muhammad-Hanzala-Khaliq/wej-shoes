@@ -67,8 +67,8 @@ function OrdersSkeleton() {
 function StatsSkeleton() {
   return (
     <div className="card p-6">
-      <div className="grid grid-cols-3 gap-4">
-        {[...Array(3)].map((_, i) => (
+      <div className="grid grid-cols-2 gap-4">
+        {[...Array(2)].map((_, i) => (
           <div key={i} className="text-center space-y-2">
             <SkeletonBlock className="h-7 w-12 mx-auto" />
             <SkeletonBlock className="h-3 w-16 mx-auto" />
@@ -257,17 +257,11 @@ export default function AccountClient() {
           </div>
 
           <div className="card p-6">
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-2 gap-4 text-center">
               <div>
                 <p className="text-2xl font-bold">{stats.totalOrders}</p>
                 <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
                   Total Orders
-                </p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{formatPrice(stats.totalSpent)}</p>
-                <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
-                  Total Spent
                 </p>
               </div>
               <div>

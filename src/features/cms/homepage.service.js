@@ -73,7 +73,7 @@ export async function getFeaturedProducts() {
         select: { id: true, size: true, stockQuantity: true },
       },
     },
-    take: 4,
+    take: 12,
     orderBy: { createdAt: "desc" },
   });
 }
@@ -96,7 +96,42 @@ export async function getNewArrivals() {
         select: { id: true, size: true, stockQuantity: true },
       },
     },
-    take: 8,
+    take: 12,
     orderBy: { createdAt: "desc" },
   });
+}
+
+/**
+ * Get discounted products for the sale page (public)
+ * Products where salePrice is set and lower than regularPrice.
+ * Prisma can't compare two columns, so we fetch all with salePrice set
+ * and filter in JS. For small catalogs this is fine.
+ * @param {number} [limit=24] - Max products to return
+ * @returns {Promise<Array>} Sale products
+ */
+export async function getSaleProducts(limit = 24) {
+  const all = await prisma.product.findMany({
+    where: {
+      status: "ACTIVE",
+      deletedAt: null,
+      salePrice: { not: null },
+    },
+    include: {
+      images: {
+        orderBy: { sortOrder: "asc" },
+        select: { id: true, imageUrl: true, isPrimary: true },
+      },
+      category: { select: { name: true } },
+      variants: {
+        where: { deletedAt: null, status: "ACTIVE" },
+        select: { id: true, size: true, stockQuantity: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  // Filter: salePrice must be less than regularPrice
+  return all
+    .filter((p) => Number(p.salePrice) < Number(p.regularPrice))
+    .slice(0, limit);
 }

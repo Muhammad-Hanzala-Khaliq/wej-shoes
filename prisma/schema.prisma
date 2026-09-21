@@ -343,3 +343,20 @@ model PasswordResetToken {
   @@index([tokenHash])
   @@map("password_reset_tokens")
 }
+
+// ─── ContactSubmission ────────────────────────────────────
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String   @db.Text
+  status    String   @default("NEW") // NEW, REPLIED, CLOSED
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("contact_submissions")
+}

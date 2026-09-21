@@ -66,6 +66,16 @@ h1, h2, h3, .font-display {
   color: var(--text-primary);
 }
 
+/* Override heading color inside dark hero sections.
+   Unlayered CSS beats Tailwind utilities in v4, so we need this. */
+.hero-dark h1,
+.hero-dark h2 {
+  color: #ffffff;
+}
+.hero-dark p {
+  color: var(--text-muted, #a3a3a3);
+}
+
 .container-page {
   max-width: var(--container);
   margin-inline: auto;

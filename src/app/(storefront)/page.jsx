@@ -116,12 +116,17 @@ export default async function HomePage() {
       {/* SECTION 3: PREMIUM (Featured Products) */}
       <section>
         <div className="container-page section">
-          <h2
-            className="heading-lg mb-10 text-center"
-            style={{ color: "var(--text-primary)" }}
-          >
-            PREMIUM
-          </h2>
+          <div className="flex items-center justify-between mb-10">
+            <h2
+              className="heading-lg"
+              style={{ color: "var(--text-primary)" }}
+            >
+              PREMIUM
+            </h2>
+            <Link href="/sale" className="link text-sm">
+              View More →
+            </Link>
+          </div>
           {serializedFeatured.length === 0 ? (
             <div className="text-center py-12">
               <p style={{ color: "var(--text-muted)" }}>
@@ -206,7 +211,7 @@ export default async function HomePage() {
             NEW ARRIVALS
           </h2>
           <Link href="/collections/new" className="link text-sm">
-            View All →
+            View More →
           </Link>
         </div>
         {serializedNew.length === 0 ? (

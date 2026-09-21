@@ -99,7 +99,7 @@ export default function SearchModal({ open, onClose }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search"
-            className="flex-1 bg-transparent outline-none text-base"
+            className="flex-1 bg-transparent text-base focus:outline-none focus:ring-1 focus:ring-gray-300 rounded px-1"
             style={{ color: "var(--text-primary)" }}
             aria-label="Search products"
           />

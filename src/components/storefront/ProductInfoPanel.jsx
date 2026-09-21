@@ -8,7 +8,7 @@ import StockIndicator from "@/components/storefront/StockIndicator";
 import { addRecentlyViewed } from "@/lib/recently-viewed";
 import { formatPrice } from "@/lib/utils";
 
-export default function ProductInfoPanel({ product, variants, initialVariant }) {
+export default function ProductInfoPanel({ product, variants, initialVariant, allOutOfStock }) {
   const searchParams = useSearchParams();
   const [wishlist, setWishlist] = useState(false);
   const [openAccordion, setOpenAccordion] = useState(null);
@@ -27,6 +27,21 @@ export default function ProductInfoPanel({ product, variants, initialVariant }) 
   };
 
   const [selectedVariant, setSelectedVariant] = useState(resolveInitialVariant);
+
+  // Auto-switch: if selected variant is OOS and in-stock variants exist, switch to first in-stock
+  useEffect(() => {
+    if (selectedVariant && selectedVariant.stockQuantity === 0 && !allOutOfStock) {
+      const firstInStock = variants.find((v) => v.stockQuantity > 0 && v.status === "ACTIVE");
+      if (firstInStock && firstInStock.id !== selectedVariant.id) {
+        setSelectedVariant(firstInStock);
+        window.history.replaceState(
+          null,
+          "",
+          `${window.location.pathname}?variant=${firstInStock.id}`
+        );
+      }
+    }
+  }, [selectedVariant, variants, allOutOfStock]);
 
   // Sync variant from URL when searchParams change (e.g., browser back/forward)
   useEffect(() => {
@@ -147,6 +162,19 @@ export default function ProductInfoPanel({ product, variants, initialVariant }) 
         )}
       </div>
 
+      {/* Out of stock banner */}
+      {allOutOfStock && (
+        <div
+          className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium"
+          style={{ background: "var(--surface-soft)", color: "var(--text-muted)" }}
+        >
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+          </svg>
+          This product is currently out of stock
+        </div>
+      )}
+
       {/* Size Chart button */}
       <div>
         <button
@@ -201,34 +229,34 @@ export default function ProductInfoPanel({ product, variants, initialVariant }) 
       <AddToCartButton
         variant={selectedVariant}
         product={product}
-        disabled={!selectedVariant}
+        disabled={!selectedVariant || allOutOfStock}
       />
 
       {/* Buy it now */}
       <button
         onClick={handleBuyNow}
-        disabled={!selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow}
+        disabled={!selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow || allOutOfStock}
         className="w-full h-10 rounded-full font-semibold text-sm transition-colors"
         style={{
-          background: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
+          background: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow || allOutOfStock
             ? "var(--border)"
             : "var(--bg)",
-          color: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
+          color: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow || allOutOfStock
             ? "var(--text-muted)"
             : "var(--ink)",
           border: "1px solid var(--ink)",
-          cursor: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow
+          cursor: !selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow || allOutOfStock
             ? "not-allowed"
             : "pointer",
         }}
         onMouseEnter={(e) => {
-          if (selectedVariant && selectedVariant.stockQuantity > 0 && !isBuyingNow) {
+          if (selectedVariant && selectedVariant.stockQuantity > 0 && !isBuyingNow && !allOutOfStock) {
             e.target.style.background = "var(--ink)";
             e.target.style.color = "var(--bg)";
           }
         }}
         onMouseLeave={(e) => {
-          if (selectedVariant && selectedVariant.stockQuantity > 0 && !isBuyingNow) {
+          if (selectedVariant && selectedVariant.stockQuantity > 0 && !isBuyingNow && !allOutOfStock) {
             e.target.style.background = "var(--bg)";
             e.target.style.color = "var(--ink)";
           }

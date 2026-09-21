@@ -86,20 +86,22 @@ export default async function ProductPage({ params, searchParams }) {
   const images = serializedProduct.images || [];
   const variants = serializedProduct.variants || [];
 
-  const firstVariant = variants[0] || null;
+  // Separate in-stock variants for default selection
+  const inStockVariants = variants.filter((v) => v.stockQuantity > 0);
+  const allOutOfStock = inStockVariants.length === 0;
 
-  // Use URL variant if provided and valid, else first variant
+  // Default: first in-stock variant; if all OOS, first variant overall
+  const defaultVariant = allOutOfStock ? variants[0] || null : inStockVariants[0];
+
+  // URL variant takes priority, but fall back to default if not found
   const initialVariant = variantIdFromUrl
-    ? variants.find((v) => v.id === variantIdFromUrl) || firstVariant
-    : firstVariant;
-
-  // Pass raw images to gallery — it handles per-size optimization
-  // optimizedImages removed: gallery generates its own sized URLs
+    ? variants.find((v) => v.id === variantIdFromUrl) || defaultVariant
+    : defaultVariant;
 
   const price = variants[0]?.salePrice
     ? Number(variants[0].salePrice)
     : Number(product.regularPrice);
-  const inStock = variants.some((v) => v.stockQuantity > 0);
+  const inStock = inStockVariants.length > 0;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -154,7 +156,7 @@ export default async function ProductPage({ params, searchParams }) {
         {/* Main grid */}
         <div className="grid md:grid-cols-2 gap-8 md:gap-12">
           {/* Left - Gallery */}
-          <div>
+          <div className={allOutOfStock ? "grayscale" : ""}>
             <ProductGallery images={images} productName={product.name} />
           </div>
 
@@ -164,6 +166,7 @@ export default async function ProductPage({ params, searchParams }) {
               product={serializedProduct}
               variants={variants}
               initialVariant={initialVariant}
+              allOutOfStock={allOutOfStock}
             />
           </div>
         </div>

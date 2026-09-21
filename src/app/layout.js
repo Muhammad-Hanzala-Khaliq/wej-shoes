@@ -4,6 +4,7 @@ import SessionProvider from "@/components/providers/SessionProvider";
 import CartProvider from "@/features/cart/CartProvider";
 import CartToast from "@/components/storefront/CartToast";
 import { SettingsProvider } from "@/features/cms/settings-context";
+import ScrollToTop from "@/components/ScrollToTop";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -31,7 +32,7 @@ export default function RootLayout({ children }) {
       className={`${archivo.variable} ${roboto.variable}`}
       data-scroll-behavior="smooth"
     >
-      <body>
+      <body className="min-h-screen flex flex-col">
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:bg-black focus:text-white focus:px-4 focus:py-2 focus:rounded"
@@ -41,8 +42,9 @@ export default function RootLayout({ children }) {
         <SessionProvider>
           <CartProvider>
             <CartToast />
+            <ScrollToTop />
             <SettingsProvider>
-              <main id="main-content">{children}</main>
+              <main id="main-content" className="flex-1">{children}</main>
             </SettingsProvider>
           </CartProvider>
         </SessionProvider>

@@ -21,12 +21,16 @@ export default function ContactForm() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [serverError, setServerError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+    if (serverError) {
+      setServerError("");
     }
   };
 
@@ -47,15 +51,46 @@ export default function ContactForm() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setServerError("");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim() || undefined,
+          subject: form.subject,
+          message: form.message.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.errors) {
+          setErrors(data.errors);
+        }
+        if (data.errors?.email) {
+          setServerError(data.errors.email);
+        } else if (data.errors?.form) {
+          setServerError(data.errors.form);
+        }
+        return;
+      }
+
       setSubmitted(true);
-    }, 1000);
+    } catch {
+      setServerError("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {
@@ -68,17 +103,23 @@ export default function ContactForm() {
         </div>
         <h3 className="text-xl font-semibold text-gray-900 mb-2">Thank You!</h3>
         <p className="text-gray-600">
-          Your message has been sent. We&apos;ll get back to you within 24 hours.
+          Your message has been sent. We&apos;ll get back to you soon.
         </p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-100 p-6 md:p-8">
+    <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">
         Send us a Message
       </h2>
+
+      {serverError && (
+        <div className="mb-4 px-4 py-3 rounded-lg text-sm font-medium bg-red-50 text-red-700 border border-red-200">
+          {serverError}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
         <div>

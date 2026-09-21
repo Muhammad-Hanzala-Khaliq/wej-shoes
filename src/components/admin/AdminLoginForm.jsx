@@ -69,18 +69,21 @@ export default function AdminLoginForm() {
 
       router.push("/admin/dashboard");
       router.refresh();
-    } catch (error) {
+    } catch {
       setServerError("An error occurred. Please try again.");
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ background: "var(--surface-soft, #f5f5f5)" }}>
       <div className="w-full max-w-md">
-        <div className="bg-gray-800 rounded-lg shadow-xl p-8 border border-gray-700">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-8">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-600 rounded-full mb-4">
+            <div
+              className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
+              style={{ background: "var(--ink, #000)" }}
+            >
               <svg
                 className="w-8 h-8 text-white"
                 fill="none"
@@ -95,12 +98,12 @@ export default function AdminLoginForm() {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-white">Admin Login</h1>
-            <p className="text-gray-400 mt-2">Access the admin panel</p>
+            <h1 className="text-2xl font-bold text-gray-900">Admin Portal</h1>
+            <p className="text-gray-500 mt-2 text-sm">Staff access only</p>
           </div>
 
           {serverError && (
-            <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg text-red-400 text-sm">
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
               {serverError}
             </div>
           )}
@@ -116,7 +119,6 @@ export default function AdminLoginForm() {
               error={errors.email}
               required
               disabled={isLoading}
-              className="[&_label]:text-gray-300"
             />
 
             <Input
@@ -129,17 +131,16 @@ export default function AdminLoginForm() {
               error={errors.password}
               required
               disabled={isLoading}
-              className="[&_label]:text-gray-300"
             />
 
             <Button
               type="submit"
               variant="primary"
               isLoading={isLoading}
-              className="w-full bg-purple-600 hover:bg-purple-700 focus:ring-purple-500"
+              className="w-full"
               size="lg"
             >
-              Login to Admin Panel
+              Sign In
             </Button>
           </form>
         </div>

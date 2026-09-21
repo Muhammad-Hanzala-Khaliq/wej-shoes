@@ -11,6 +11,7 @@ import { getCategories } from "@/lib/api/categories";
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "New Arrivals", href: "/collections/new" },
+  { label: "Sale", href: "/sale", highlight: true },
 ];
 
 export default function Header() {
@@ -229,7 +230,7 @@ export default function Header() {
                 key={link.href}
                 href={link.href}
                 className="text-sm font-medium link"
-                style={{ color: "var(--text-secondary)" }}
+                style={{ color: link.highlight ? "#dc2626" : "var(--text-secondary)" }}
               >
                 {link.label}
               </Link>
@@ -573,6 +574,22 @@ export default function Header() {
             }
           >
             New Arrivals
+          </Link>
+
+          {/* Sale */}
+          <Link
+            href="/sale"
+            onClick={closeMenu}
+            className="block py-2.5 px-3 rounded-lg transition-colors font-medium"
+            style={{ color: "#dc2626" }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "var(--surface-soft)")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
+          >
+            Sale
           </Link>
 
           <div

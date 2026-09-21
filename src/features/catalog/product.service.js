@@ -451,6 +451,11 @@ export async function deleteProduct(id) {
   }
 
   await prisma.$transaction(async (tx) => {
+    // Delete associated images first (no soft delete needed for images)
+    await tx.productImage.deleteMany({
+      where: { productId: id },
+    });
+
     await tx.product.update({
       where: { id },
       data: { deletedAt: new Date() },

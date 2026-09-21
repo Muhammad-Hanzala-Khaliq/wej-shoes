@@ -1,27 +1,123 @@
-# Backup & Recovery
+# Database Backup & Restore Guide
 
-## Database (Neon)
+## Neon PostgreSQL Backups
 
-- Neon free tier provides automatic backups with a 6-hour history window
-- 1 snapshot available — create before major migrations
-- To create snapshot: Neon Console → Project → Snapshots → Create
-- To restore: Neon Console → Snapshots → Restore to branch
+### Automatic Backups (Neon Free Tier)
 
-## Images (Cloudinary)
+Neon automatically creates backups for all projects. Free tier includes:
 
-- All product images stored in Cloudinary (not local)
-- Cloudinary free tier: 25 GB credits
-- Images recoverable via Cloudinary Media Library
-- No local uploads exist in codebase
+- **Point-in-time restore** (PITR): Available on paid plans only
+- **Daily backups**: Retained for 7 days (free) or 30 days (paid)
+- **Branch-level snapshots**: Each branch has its own backup
 
-## Seed Data
+### Creating a Backup Branch
 
-- Run: `npx prisma db seed`
-- Seeds: categories, sample admin user, sample products, sample order
-- Safe to re-run (uses upsert)
+```bash
+# Using Neon CLI
+neon branches create --project-id <project-id> --name backup-$(date +%Y%m%d)
 
-## Disaster Recovery Steps
+# Or via Neon Console:
+# 1. Go to your project dashboard
+# 2. Click "Branches" in the sidebar
+# 3. Click "Create Branch"
+# 4. Name it "backup-YYYYMMDD"
+# 5. Select "From current main" as the source
+```
 
-1. **DB corrupted**: Restore from Neon snapshot or re-seed
-2. **Images missing**: Re-upload via Cloudinary dashboard
-3. **Full rebuild**: Clone repo → `npm install` → copy `.env` → `npx prisma migrate deploy` → `npx prisma db seed`
+### Point-in-Time Restore (Paid Plans Only)
+
+```bash
+# Restore to a specific timestamp
+neon branches restore --project-id <project-id> \
+  --branch <branch-id> \
+  --timestamp "2025-06-15T10:30:00Z"
+
+# Or via Neon Console:
+# 1. Go to your project dashboard
+# 2. Click "Branches"
+# 3. Select the branch to restore
+# 4. Click "Restore" → "Point-in-time restore"
+# 5. Choose the timestamp
+```
+
+### pg_dump Export (Manual Backup)
+
+```bash
+# Full database dump
+pg_dump $DATABASE_URL -f backup-$(date +%Y%m%d).sql
+
+# Schema only (no data)
+pg_dump --schema-only $DATABASE_URL -f schema-$(date +%Y%m%d).sql
+
+# Data only (no schema)
+pg_dump --data-only $DATABASE_URL -f data-$(date +%Y%m%d).sql
+
+# Custom format (compressed, recommended for large databases)
+pg_dump -Fc $DATABASE_URL -f backup-$(date +%Y%m%d).dump
+
+# With specific tables
+pg_dump $DATABASE_URL -t users -t orders -f partial-backup.sql
+```
+
+### Restoring from pg_dump
+
+```bash
+# Restore from SQL dump
+psql $DATABASE_URL -f backup-20250615.sql
+
+# Restore from custom format
+pg_restore -d $DATABASE_URL backup-20250615.dump
+
+# Restore specific tables
+pg_restore -d $DATABASE_URL -t users backup-20250615.dump
+```
+
+### Backup Schedule Recommendation
+
+| Frequency | Method | Retention |
+|-----------|--------|-----------|
+| Daily | Neon automatic | 7 days (free) / 30 days (paid) |
+| Weekly | pg_dump to local | 4 weeks |
+| Before migrations | pg_dump + branch | Keep until next backup |
+| Monthly | pg_dump to cloud storage | 12 months |
+
+### Automated Backup Script
+
+Create a `scripts/backup.sh` file:
+
+```bash
+#!/bin/bash
+set -euo pipefail
+
+BACKUP_DIR="./backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="$BACKUP_DIR/backup-$DATE.sql"
+
+mkdir -p "$BACKUP_DIR"
+
+echo "Creating backup: $BACKUP_FILE"
+pg_dump "$DATABASE_URL" -f "$BACKUP_FILE" --verbose
+
+echo "Compressing..."
+gzip "$BACKUP_FILE"
+
+echo "Backup complete: ${BACKUP_FILE}.gz"
+echo "Size: $(du -h "${BACKUP_FILE}.gz" | cut -f1)"
+
+# Keep only last 30 backups
+cd "$BACKUP_DIR"
+ls -t backup-*.sql.gz | tail -n +31 | xargs -r rm
+echo "Cleanup complete. Remaining backups:"
+ls -la backup-*.sql.gz 2>/dev/null || echo "  (none)"
+```
+
+Make it executable:
+```bash
+chmod +x scripts/backup.sh
+```
+
+Run manually or via cron:
+```bash
+# Weekly backup (every Sunday at 2 AM)
+0 2 * * 0 cd /path/to/project && ./scripts/backup.sh
+```

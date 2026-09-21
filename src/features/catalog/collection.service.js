@@ -37,36 +37,20 @@ export async function getCollectionInfo(slug) {
 }
 
 /**
- * Get products for collection pages with filtering, sorting, and pagination
- * @param {Object} options
- * @param {string} [options.gender] - Filter by gender (MEN/WOMEN)
- * @param {string} [options.categorySlug] - Filter by category slug
- * @param {number} [options.page=1] - Page number
- * @param {number} [options.limit=12] - Items per page
- * @param {string} [options.sort="newest"] - Sort option
- * @param {number} [options.minPrice] - Minimum price
- * @param {number} [options.maxPrice] - Maximum price
- * @param {string[]} [options.colors] - Filter by colors
- * @param {string[]} [options.sizes] - Filter by sizes
- * @param {boolean} [options.inStock] - Only show in-stock products
- * @returns {Promise<Object>} { products, total, page, totalPages }
+ * Compute the effective selling price for a product.
+ * Returns salePrice if set, otherwise regularPrice.
  */
-export async function getCollectionProducts(options = {}) {
-  const {
-    gender,
-    categorySlug,
-    page = 1,
-    limit = 12,
-    sort = "newest",
-    minPrice,
-    maxPrice,
-    colors,
-    sizes,
-    inStock,
-  } = options;
+function getEffectivePrice(product) {
+  if (product.salePrice != null && Number(product.salePrice) < Number(product.regularPrice)) {
+    return Number(product.salePrice);
+  }
+  return Number(product.regularPrice);
+}
 
-  const skip = (page - 1) * limit;
-
+/**
+ * Build the Prisma WHERE clause for collection products.
+ */
+function buildWhereClause({ gender, categorySlug, minPrice, maxPrice, colors, sizes, inStock }) {
   const where = {
     status: "ACTIVE",
     deletedAt: null,
@@ -133,14 +117,80 @@ export async function getCollectionProducts(options = {}) {
     where.AND = variantConditions.map((c) => ({ variants: c }));
   }
 
+  return where;
+}
+
+const PRODUCT_INCLUDE = {
+  images: {
+    orderBy: { sortOrder: "asc" },
+    select: { id: true, imageUrl: true, isPrimary: true },
+  },
+  category: {
+    select: { id: true, name: true, slug: true, gender: true },
+  },
+  variants: {
+    where: { deletedAt: null },
+    select: { id: true, color: true, size: true, stockQuantity: true },
+  },
+};
+
+/**
+ * Get products for collection pages with filtering, sorting, and pagination.
+ *
+ * Price sorts (price-asc / price-desc) sort by the effective selling price
+ * (salePrice when set, otherwise regularPrice). This is done via in-JS sort
+ * on the full matching set to ensure correct interleaving of sale vs regular
+ * products. For small-to-medium catalogs (< 500 products) this is performant.
+ *
+ * @param {Object} options
+ * @returns {Promise<Object>} { products, total, page, totalPages }
+ */
+export async function getCollectionProducts(options = {}) {
+  const {
+    gender,
+    categorySlug,
+    page = 1,
+    limit = 12,
+    sort = "newest",
+    minPrice,
+    maxPrice,
+    colors,
+    sizes,
+    inStock,
+  } = options;
+
+  const skip = (page - 1) * limit;
+  const where = buildWhereClause({ gender, categorySlug, minPrice, maxPrice, colors, sizes, inStock });
+
+  // --- Price sorts: fetch all, sort in JS, paginate ---
+  if (sort === "price-asc" || sort === "price-desc") {
+    const allProducts = await prisma.product.findMany({
+      where,
+      include: PRODUCT_INCLUDE,
+    });
+
+    const dir = sort === "price-asc" ? 1 : -1;
+
+    allProducts.sort((a, b) => {
+      const priceA = getEffectivePrice(a);
+      const priceB = getEffectivePrice(b);
+      return (priceA - priceB) * dir;
+    });
+
+    const total = allProducts.length;
+    const products = allProducts.slice(skip, skip + limit);
+
+    return {
+      products,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  // --- Non-price sorts: use Prisma orderBy directly ---
   let orderBy = {};
   switch (sort) {
-    case "price-asc":
-      orderBy = { regularPrice: "asc" };
-      break;
-    case "price-desc":
-      orderBy = { regularPrice: "desc" };
-      break;
     case "name-asc":
       orderBy = { name: "asc" };
       break;
@@ -153,19 +203,7 @@ export async function getCollectionProducts(options = {}) {
   const [products, total] = await Promise.all([
     prisma.product.findMany({
       where,
-      include: {
-        images: {
-          orderBy: { sortOrder: "asc" },
-          select: { id: true, imageUrl: true, isPrimary: true },
-        },
-        category: {
-          select: { id: true, name: true, slug: true, gender: true },
-        },
-        variants: {
-          where: { deletedAt: null },
-          select: { id: true, color: true, size: true, stockQuantity: true },
-        },
-      },
+      include: PRODUCT_INCLUDE,
       orderBy,
       skip,
       take: limit,
@@ -219,8 +257,7 @@ export async function getAvailableFilters(gender, categorySlug) {
   let maxPrice = -Infinity;
 
   products.forEach((product) => {
-    const effectivePrice = product.salePrice || product.regularPrice;
-    const price = Number(effectivePrice);
+    const price = getEffectivePrice(product);
     if (price < minPrice) minPrice = price;
     if (price > maxPrice) maxPrice = price;
 

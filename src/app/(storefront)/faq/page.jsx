@@ -1,9 +1,11 @@
 import Link from "next/link";
 import FaqAccordion from "@/components/storefront/FaqAccordion";
+import PageHero from "@/components/storefront/PageHero";
 
 export const metadata = {
   title: "FAQ | WEJ Shoes",
-  description: "Frequently asked questions about orders, payment, returns, and products at WEJ Shoes.",
+  description:
+    "Frequently asked questions about orders, payment, returns, and products at WEJ Shoes.",
 };
 
 const FAQ_DATA = [
@@ -87,30 +89,27 @@ const FAQ_DATA = [
 export default function FAQPage() {
   return (
     <div>
-      <section className="bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
-          <h1 className="text-4xl font-bold text-center">
-            Frequently Asked Questions
-          </h1>
-          <p className="text-gray-300 text-center mt-4 max-w-xl mx-auto">
-            Find answers to common questions about orders, payment, returns, and more.
-          </p>
-        </div>
-      </section>
+      <PageHero
+        eyebrow="Help Center"
+        title="Frequently Asked Questions"
+        subtitle="Find answers to common questions about orders, payment, returns, and more."
+      />
 
       <section className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-        <FaqAccordion faqData={FAQ_DATA} />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
+          <FaqAccordion faqData={FAQ_DATA} />
+        </div>
 
         <div className="mt-12 text-center">
           <p className="text-gray-600 mb-4">
             Still have questions? We&apos;re here to help.
           </p>
-          <a
+          <Link
             href="/contact"
             className="inline-flex items-center justify-center px-6 py-3 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 transition-colors"
           >
             Contact Us
-          </a>
+          </Link>
         </div>
       </section>
     </div>
