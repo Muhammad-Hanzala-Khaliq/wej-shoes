@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useCart } from "@/features/cart/CartProvider";
 import { formatPrice } from "@/lib/utils";
 import { getShippingRules } from "@/lib/api/checkout";
+import { resolveShipping } from "@/lib/shipping";
 
 function getOptimizedUrl(url, width) {
   if (!url || !url.includes("cloudinary")) return url;
@@ -27,17 +28,11 @@ export default function CartClient() {
     fetchShippingRules();
   }, []);
 
-  let shippingFee = 200;
-  let freeShippingThreshold = 5000;
-  if (shippingRules.length > 0) {
-    const activeRule = shippingRules.find((r) => r.type === "FLAT" || r.type === "FREE") || shippingRules[0];
-    if (activeRule) {
-      shippingFee = Number(activeRule.amount) || 0;
-      freeShippingThreshold = activeRule.freeShippingThreshold ? Number(activeRule.freeShippingThreshold) : null;
-    }
-  }
-  const qualifiesForFreeShipping = freeShippingThreshold && cart.subtotal >= freeShippingThreshold;
-  const finalShippingFee = qualifiesForFreeShipping ? 0 : shippingFee;
+  // Same shared calculation the server uses when saving the order
+  const { fee: finalShippingFee, freeShippingThreshold } = resolveShipping(
+    shippingRules,
+    cart.subtotal
+  );
   const total = cart.subtotal + finalShippingFee;
 
   const handleQuantityChange = (itemId, newQty) => {

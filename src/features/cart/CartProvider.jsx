@@ -370,9 +370,32 @@ export default function CartProvider({ children }) {
     try {
       setError(null);
 
-      const data = await apiMergeCart();
+      // 1. Server-side merge: guest cart (guest_session_id) → user cart
+      let data = await apiMergeCart();
 
-      setCart(data);
+      // 2. Top up items that exist only in localStorage (optimistic / unsynced)
+      const local = readCartStorage();
+      if (local?.items?.length) {
+        const serverItems = data?.items || [];
+        for (const localItem of local.items) {
+          if (!localItem?.variantId) continue;
+          const existing = serverItems.find((s) => s.variantId === localItem.variantId);
+          const want = localItem.quantity || 1;
+          const have = existing ? existing.quantity : 0;
+          if (want > have) {
+            try {
+              await apiAddToCart({ variantId: localItem.variantId, quantity: want - have });
+            } catch {
+              // skip items that can no longer be added (out of stock, etc.)
+            }
+          }
+        }
+        // 3. Authoritative cart, then overwrite localStorage (clears stale guest copy)
+        data = await getCart();
+      }
+
+      setCart(data || { items: [], subtotal: 0, itemCount: 0, cartId: null });
+      if (data) persistCart(data);
       return { success: true };
     } catch (err) {
       setError(err.message);

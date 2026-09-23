@@ -16,15 +16,42 @@ export async function POST(request) {
     const session = await auth();
     const userId = session?.user?.id || null;
 
-    if (!userId && !sessionId) {
+    const body = await request.json();
+    const { shippingAddress, notes, items, buyNow } = body;
+
+    // ── Validate items array when provided (Buy Now or cart checkout) ─────
+    // Only variantId + quantity are trusted — all prices come from the DB.
+    let parsedItems;
+    if (items !== undefined && items !== null) {
+      if (!Array.isArray(items) || items.length === 0) {
+        return NextResponse.json({ error: "Your cart is empty" }, { status: 400 });
+      }
+
+      parsedItems = [];
+      for (const item of items) {
+        if (!item?.productId || !item?.variantId) {
+          return NextResponse.json({ error: "Invalid cart items" }, { status: 400 });
+        }
+        const quantity = parseInt(item.quantity, 10);
+        if (!Number.isInteger(quantity) || quantity < 1) {
+          return NextResponse.json({ error: "Invalid quantity" }, { status: 400 });
+        }
+        parsedItems.push({
+          productId: String(item.productId),
+          variantId: String(item.variantId),
+          quantity,
+        });
+      }
+    }
+
+    // A session is only required when falling back to the DB cart
+    // (Buy Now sends its own items, so it works even without a cart session)
+    if (!parsedItems && !userId && !sessionId) {
       return NextResponse.json(
         { error: "Session required. Please add items to cart first." },
         { status: 400 }
       );
     }
-
-    const body = await request.json();
-    const { shippingAddress, notes } = body;
 
     // Validate shipping address
     const errors = {};
@@ -69,18 +96,27 @@ export async function POST(request) {
         postalCode: shippingAddress.postalCode?.trim() || "",
       },
       notes: notes?.trim() || null,
+      items: parsedItems,
+      // Buy Now never has a cart to clear; regular checkout clears the cart
+      clearCart: buyNow !== true,
     });
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
     logError("POST /api/orders", error);
 
-    if (error.message === "Cart is empty") {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    if (error.message.includes("Insufficient stock") || error.message.includes("not available")) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+    const msg = error.message || "";
+    if (
+      msg === "Cart is empty" ||
+      msg === "Your cart is empty" ||
+      msg === "Invalid cart items" ||
+      msg === "userId or sessionId is required" ||
+      msg.includes("Insufficient stock") ||
+      msg.includes("not available") ||
+      msg.includes("no longer available") ||
+      msg.includes("not active")
+    ) {
+      return NextResponse.json({ error: msg }, { status: 400 });
     }
 
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

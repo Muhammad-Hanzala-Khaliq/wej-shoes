@@ -182,10 +182,20 @@ export default function TrackOrderClient() {
                 </div>
               ))}
             </div>
-            <div className="border-t border-gray-100 mt-4 pt-4">
-              <div className="flex justify-between text-base font-semibold">
+            <div className="border-t border-gray-100 mt-4 pt-4 space-y-2">
+              <div className="flex justify-between text-base">
+                <span className="text-gray-600">Subtotal</span>
+                <span>{formatPrice(order.subtotal ?? 0)}</span>
+              </div>
+              <div className="flex justify-between text-base">
+                <span className="text-gray-600">Shipping</span>
+                <span className={(order.shippingFee ?? 0) === 0 ? "text-green-600 font-medium" : ""}>
+                  {(order.shippingFee ?? 0) === 0 ? "Free" : formatPrice(order.shippingFee)}
+                </span>
+              </div>
+              <div className="flex justify-between text-base font-semibold border-t border-gray-100 pt-2">
                 <span>Total</span>
-                <span>{formatPrice(order.totalAmount)}</span>
+                <span>{formatPrice(order.totalAmount ?? 0)}</span>
               </div>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import AddToCartButton from "@/components/storefront/AddToCartButton";
 import StockIndicator from "@/components/storefront/StockIndicator";
 import { addRecentlyViewed } from "@/lib/recently-viewed";
+import { saveBuyNow } from "@/lib/buy-now";
 import { formatPrice } from "@/lib/utils";
 
 export default function ProductInfoPanel({ product, variants, initialVariant, allOutOfStock }) {
@@ -14,6 +15,23 @@ export default function ProductInfoPanel({ product, variants, initialVariant, al
   const [openAccordion, setOpenAccordion] = useState(null);
   const [showSizeChart, setShowSizeChart] = useState(false);
   const [isBuyingNow, setIsBuyingNow] = useState(false);
+  const [showExpiredNotice, setShowExpiredNotice] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+
+  // Detect the "checkout session expired" redirect — runs before the effects
+  // below rewrite the URL, so the ?expired=1 param is still readable here.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("expired") !== "1") return;
+    setShowExpiredNotice(true);
+    params.delete("expired");
+    const qs = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${qs ? `?${qs}` : ""}`
+    );
+  }, []);
 
   // Determine initial variant: URL param > server prop > first in-stock > first
   const resolveInitialVariant = () => {
@@ -77,6 +95,13 @@ export default function ProductInfoPanel({ product, variants, initialVariant, al
     });
   }, [product.slug]);
 
+  // Keep quantity within stock when the size changes (never trust a stale qty)
+  useEffect(() => {
+    if (selectedVariant && quantity > selectedVariant.stockQuantity) {
+      setQuantity(Math.max(1, selectedVariant.stockQuantity));
+    }
+  }, [selectedVariant, quantity]);
+
   // Handle size selection — update state + URL
   const handleSizeSelect = (size) => {
     const variant = variants.find((v) => String(v.size) === String(size));
@@ -90,11 +115,14 @@ export default function ProductInfoPanel({ product, variants, initialVariant, al
     }
   };
 
-  // Handle Buy Now
+  // Handle Buy Now — pass the selected quantity through to checkout
   const handleBuyNow = () => {
     if (!selectedVariant || selectedVariant.stockQuantity === 0 || isBuyingNow) return;
     setIsBuyingNow(true);
-    window.location.href = `/checkout?variant=${selectedVariant.id}&quantity=1&buyNow=true`;
+    const qty = Math.min(Math.max(1, quantity), selectedVariant.stockQuantity);
+    // Snapshot in sessionStorage as a fallback if the URL params get stripped
+    saveBuyNow({ variantId: selectedVariant.id, quantity: qty, slug: product.slug });
+    window.location.href = `/checkout?variant=${selectedVariant.id}&quantity=${qty}&buyNow=true`;
   };
 
   const sizes = [...new Set(variants.map((v) => String(v.size)))];
@@ -114,6 +142,22 @@ export default function ProductInfoPanel({ product, variants, initialVariant, al
 
   return (
     <div className="space-y-6">
+      {showExpiredNotice && (
+        <div
+          className="flex items-start justify-between gap-3 p-3 rounded-lg text-sm bg-amber-50 border border-amber-200 text-amber-900"
+          role="status"
+        >
+          <span>Your checkout session expired. Please select a size and try again.</span>
+          <button
+            type="button"
+            onClick={() => setShowExpiredNotice(false)}
+            className="flex-shrink-0 font-bold leading-none"
+            aria-label="Dismiss message"
+          >
+            &times;
+          </button>
+        </div>
+      )}
       {/* Product name + wishlist */}
       <div className="flex items-start justify-between gap-4">
         <h1
@@ -230,6 +274,8 @@ export default function ProductInfoPanel({ product, variants, initialVariant, al
         variant={selectedVariant}
         product={product}
         disabled={!selectedVariant || allOutOfStock}
+        quantity={quantity}
+        setQuantity={setQuantity}
       />
 
       {/* Buy it now */}

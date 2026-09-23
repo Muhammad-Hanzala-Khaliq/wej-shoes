@@ -4,8 +4,18 @@ import { useState, useRef } from "react";
 import { useCart } from "@/features/cart/CartProvider";
 import { flyToCart } from "@/lib/fly-to-cart";
 
-export default function AddToCartButton({ variant, product, disabled }) {
-  const [quantity, setQuantity] = useState(1);
+export default function AddToCartButton({
+  variant,
+  product,
+  disabled,
+  quantity: quantityProp,
+  setQuantity: setQuantityProp,
+}) {
+  const [internalQuantity, setInternalQuantity] = useState(1);
+  // Controlled mode: ProductInfoPanel lifts this state so the same quantity
+  // can be passed to Buy Now / checkout. Falls back to internal state otherwise.
+  const quantity = quantityProp ?? internalQuantity;
+  const setQuantity = setQuantityProp ?? setInternalQuantity;
   const [added, setAdded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [quantityError, setQuantityError] = useState("");

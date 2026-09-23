@@ -2,6 +2,7 @@ import prisma from "@/lib/db";
 import { revalidateProduct } from "@/lib/revalidate";
 import { sendEmail } from "@/lib/email";
 import { orderConfirmationEmail } from "@/lib/emails/templates";
+import { resolveShipping } from "@/lib/shipping";
 
 /**
  * Generate unique order number
@@ -29,43 +30,103 @@ function generateOrderNumber() {
  * @param {string} params.shippingAddress.province
  * @param {string} [params.shippingAddress.postalCode]
  * @param {string} [params.notes] - Order notes
+ * @param {Array<{productId:string, variantId:string, quantity:number}>} [params.items] - Order items (Buy Now / checkout form)
+ * @param {boolean} [params.clearCart] - Clear the DB cart after ordering (default true; false for Buy Now)
  * @returns {Promise<Object>} Created order
+ *
+ * Two sources of items:
+ * 1. `items` provided (Buy Now / checkout form) → variants are resolved from
+ *    the DB; the client only supplies variantId + quantity (never prices).
+ * 2. No `items` → the user's/guest's DB cart is used (legacy behavior).
  */
-export async function createOrder({ userId, sessionId, shippingAddress, notes }) {
-  if (!userId && !sessionId) {
+export async function createOrder({ userId, sessionId, shippingAddress, notes, items, clearCart = true }) {
+  if (!userId && !sessionId && !(items && items.length > 0)) {
     throw new Error("userId or sessionId is required");
   }
 
-  // Get cart with items
-  const cart = await prisma.cart.findFirst({
-    where: userId ? { userId } : { sessionId },
-    include: {
-      items: {
-        include: {
-          variant: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  regularPrice: true,
-                  salePrice: true,
-                  status: true,
+  let cart = null;
+  let orderItems; // [{ variantId, quantity, variant }]
+
+  if (items && items.length > 0) {
+    // ── Buy Now / checkout form: resolve items from the DB ────────────────
+    // Merge duplicate lines so stock is checked against the true total
+    const qtyByVariant = new Map();
+    for (const item of items) {
+      const quantity = Number(item?.quantity);
+      if (!item?.variantId || !Number.isInteger(quantity) || quantity < 1) {
+        throw new Error("Invalid cart items");
+      }
+      qtyByVariant.set(
+        item.variantId,
+        (qtyByVariant.get(item.variantId) || 0) + quantity
+      );
+    }
+
+    const resolvedVariants = await prisma.productVariant.findMany({
+      where: { id: { in: [...qtyByVariant.keys()] } },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            regularPrice: true,
+            salePrice: true,
+            status: true,
+          },
+        },
+      },
+    });
+    const resolvedMap = new Map(resolvedVariants.map((v) => [v.id, v]));
+
+    orderItems = [...qtyByVariant.entries()].map(([variantId, quantity]) => {
+      const variant = resolvedMap.get(variantId);
+      if (!variant) {
+        throw new Error("An item in your cart is no longer available");
+      }
+      return { variantId, quantity, variant };
+    });
+  } else {
+    // ── Legacy: load the cart from the DB ─────────────────────────────────
+    if (!userId && !sessionId) {
+      throw new Error("userId or sessionId is required");
+    }
+
+    cart = await prisma.cart.findFirst({
+      where: userId ? { userId } : { sessionId },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    regularPrice: true,
+                    salePrice: true,
+                    status: true,
+                  },
                 },
               },
             },
           },
         },
       },
-    },
-  });
+    });
 
-  if (!cart || cart.items.length === 0) {
-    throw new Error("Cart is empty");
+    if (!cart || cart.items.length === 0) {
+      throw new Error("Your cart is empty");
+    }
+
+    orderItems = cart.items.map((item) => ({
+      variantId: item.variantId,
+      quantity: item.quantity,
+      variant: item.variant,
+    }));
   }
 
   // Validate all variants are in stock and active
-  for (const item of cart.items) {
+  for (const item of orderItems) {
     const { variant } = item;
     if (variant.deletedAt) {
       throw new Error(`Variant ${variant.sku} is no longer available`);
@@ -88,7 +149,7 @@ export async function createOrder({ userId, sessionId, shippingAddress, notes })
   let subtotal = 0;
   const orderItemsData = [];
 
-  for (const item of cart.items) {
+  for (const item of orderItems) {
     const { variant } = item;
     const regularPrice = Number(variant.product.regularPrice);
     const salePrice = variant.product.salePrice ? Number(variant.product.salePrice) : null;
@@ -110,7 +171,18 @@ export async function createOrder({ userId, sessionId, shippingAddress, notes })
     });
   }
 
-  const shippingFee = subtotal >= 5000 ? 0 : 200;
+  // Shipping from the SAME admin rules the cart/checkout page displays
+  // (stored on the order → historical accuracy if rules change later)
+  let shippingRules = [];
+  try {
+    shippingRules = await prisma.shippingRule.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: "asc" },
+    });
+  } catch {
+    // fall back to defaults inside resolveShipping
+  }
+  const shippingFee = resolveShipping(shippingRules, subtotal).fee;
   const totalAmount = subtotal + shippingFee;
   const orderNumber = generateOrderNumber();
 
@@ -156,7 +228,7 @@ export async function createOrder({ userId, sessionId, shippingAddress, notes })
     });
 
     // Update variant stock and record inventory history (batched reads, individual writes in tx)
-    const variantIds = cart.items.map((item) => item.variantId);
+    const variantIds = orderItems.map((item) => item.variantId);
     const variants = await tx.productVariant.findMany({
       where: { id: { in: variantIds } },
       select: { id: true, stockQuantity: true },
@@ -164,8 +236,14 @@ export async function createOrder({ userId, sessionId, shippingAddress, notes })
     const variantMap = new Map(variants.map((v) => [v.id, v.stockQuantity]));
 
     await Promise.all(
-      cart.items.map((item) => {
+      orderItems.map((item) => {
         const previousQuantity = variantMap.get(item.variantId);
+        // Re-check stock inside the transaction (guards against race conditions)
+        if (previousQuantity == null || previousQuantity < item.quantity) {
+          throw new Error(
+            `Insufficient stock for ${item.variant.product.name} (${item.variant.color}/${item.variant.size})`
+          );
+        }
         const newQuantity = previousQuantity - item.quantity;
         return Promise.all([
           tx.productVariant.update({
@@ -188,17 +266,27 @@ export async function createOrder({ userId, sessionId, shippingAddress, notes })
       })
     );
 
-    // Clear the cart
-    await tx.cartItem.deleteMany({
-      where: { cartId: cart.id },
-    });
+    // Clear the DB cart after a regular checkout (skipped for Buy Now)
+    if (clearCart && (userId || sessionId)) {
+      let cartId = cart?.id;
+      if (!cartId) {
+        const existingCart = await tx.cart.findFirst({
+          where: userId ? { userId } : { sessionId },
+          select: { id: true },
+        });
+        cartId = existingCart?.id;
+      }
+      if (cartId) {
+        await tx.cartItem.deleteMany({ where: { cartId } });
+      }
+    }
 
     return newOrder;
   }, { maxWait: 20000, timeout: 15000 });
 
   // Revalidate affected product pages (keeps stock display fresh)
   try {
-    const productIds = [...new Set(cart.items.map((item) => item.variant.product.id))];
+    const productIds = [...new Set(orderItems.map((item) => item.variant.product.id))];
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
       select: { slug: true },
@@ -351,7 +439,10 @@ export async function trackOrderByPhone(orderNumber, phone) {
       price: Number(item.unitPrice),
       total: Number(item.totalPrice),
     })),
-    totalAmount: Number(order.totalAmount),
+    // Stored values — never recalculated (older orders with a NULL fee show 0)
+    subtotal: Number(order.subtotal ?? 0),
+    shippingFee: Number(order.shippingFee ?? 0),
+    totalAmount: Number(order.totalAmount ?? 0),
     shippingAddress: {
       city: order.city,
       province: order.area,

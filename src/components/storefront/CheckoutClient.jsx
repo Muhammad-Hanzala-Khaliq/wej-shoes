@@ -9,6 +9,8 @@ import { useCart } from "@/features/cart/CartProvider";
 import { formatPrice, validatePhone } from "@/lib/utils";
 import { getCheckoutVariant, getShippingRules } from "@/lib/api/checkout";
 import { placeOrder } from "@/lib/api/orders";
+import { saveBuyNow, readBuyNow, clearBuyNow } from "@/lib/buy-now";
+import { resolveShipping } from "@/lib/shipping";
 
 const PROVINCES = [
   "Punjab",
@@ -25,7 +27,7 @@ function getOptimizedUrl(url, width) {
   return url.replace("/upload/", `/upload/w_${width},f_auto,q_auto/`);
 }
 
-export default function CheckoutClient() {
+export default function CheckoutClient({ initialBuyNowItem = null, buyNowError = "" }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -35,8 +37,11 @@ export default function CheckoutClient() {
   const buyNowQuantity = parseInt(searchParams.get("quantity") || "1", 10);
   const isBuyNow = searchParams.get("buyNow") === "true";
 
-  const [buyNowItem, setBuyNowItem] = useState(null);
+  const [buyNowItem, setBuyNowItem] = useState(initialBuyNowItem);
   const [buyNowLoading, setBuyNowLoading] = useState(false);
+  const [buyNowFail, setBuyNowFail] = useState(
+    buyNowError ? { message: buyNowError, slug: null } : null
+  );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -55,29 +60,66 @@ export default function CheckoutClient() {
     notes: "",
   });
 
+  // Buy Now: the server passes the item when URL params are valid. Otherwise
+  // fall back to the sessionStorage snapshot; if it expired, send the user
+  // back to the product page with a message.
   useEffect(() => {
-    if (!isBuyNow || !buyNowVariantId) return;
+    if (!isBuyNow || initialBuyNowItem) return;
 
-    async function fetchVariant() {
+    async function loadBuyNow() {
+      // Server already failed to resolve the URL variant (invalid / OOS)
+      if (buyNowError) {
+        const saved = readBuyNow();
+        if (saved?.slug) {
+          setBuyNowFail({ message: buyNowError, slug: saved.slug });
+        }
+        return;
+      }
+
       setBuyNowLoading(true);
       try {
-        const data = await getCheckoutVariant(buyNowVariantId);
-        setBuyNowItem({ ...data, quantity: buyNowQuantity });
-      } catch {
+        // 1. URL param (primary source)
+        if (buyNowVariantId) {
+          const data = await getCheckoutVariant(buyNowVariantId);
+          setBuyNowItem({ ...data, quantity: buyNowQuantity });
+          saveBuyNow({ variantId: data.id, quantity: buyNowQuantity, slug: data.slug });
+          setBuyNowFail(null);
+          return;
+        }
+
+        // 2. sessionStorage fallback
+        const saved = readBuyNow();
+        if (saved && !saved.expired) {
+          const data = await getCheckoutVariant(saved.variantId);
+          setBuyNowItem({ ...data, quantity: saved.quantity || buyNowQuantity });
+          return;
+        }
+        if (saved?.slug) {
+          // Expired session → back to the product page with a message
+          router.push(`/product/${saved.slug}?expired=1`);
+          return;
+        }
         router.push("/cart");
+      } catch {
+        // Variant deleted or out of stock at checkout time
+        const saved = readBuyNow();
+        if (saved?.slug && saved.expired) {
+          router.push(`/product/${saved.slug}?expired=1`);
+        } else {
+          setBuyNowFail({
+            message: "This size is out of stock or no longer available. Please choose another size.",
+            slug: saved?.slug || null,
+          });
+        }
       } finally {
         setBuyNowLoading(false);
       }
     }
-    fetchVariant();
-  }, [isBuyNow, buyNowVariantId, buyNowQuantity, router]);
+    loadBuyNow();
+  }, [isBuyNow, initialBuyNowItem, buyNowError, buyNowVariantId, buyNowQuantity, router]);
 
-  useEffect(() => {
-    if (isBuyNow || buyNowLoading || orderPlaced) return;
-    if (!cartLoading && (!cart.items || cart.items.length === 0)) {
-      router.push("/cart");
-    }
-  }, [cart, cartLoading, router, isBuyNow, buyNowLoading, orderPlaced]);
+  // Note: an empty cart renders a friendly "Your cart is empty" state below
+  // (no redirect) — this also covers checkout opened directly via URL.
 
   useEffect(() => {
     async function fetchShippingRules() {
@@ -125,12 +167,41 @@ export default function CheckoutClient() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting || orderPlaced) return; // guard against double submit
     setError("");
     if (!validate()) return;
     setIsSubmitting(true);
 
+    // Build the items list from what the form was given (Buy Now item or cart).
+    // Only variantId + quantity are sent — the server re-reads all prices,
+    // stock, and totals from the database.
+    const items =
+      isBuyNow && buyNowItem
+        ? [
+            {
+              productId: buyNowItem.productId,
+              variantId: buyNowItem.id,
+              quantity: buyNowItem.quantity,
+            },
+          ]
+        : (cart.items || [])
+            .filter((item) => item.variantId && item.product?.id)
+            .map((item) => ({
+              productId: item.product.id,
+              variantId: item.variantId,
+              quantity: item.quantity,
+            }));
+
+    if (items.length === 0) {
+      setError("Your cart is empty. Please add items before placing an order.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const data = await placeOrder({
+        items,
+        buyNow: isBuyNow,
         shippingAddress: {
           fullName: form.fullName.trim(),
           phone: form.phone.trim(),
@@ -154,7 +225,11 @@ export default function CheckoutClient() {
         setIsSubmitting(false);
         return;
       }
-      await clearCart();
+      if (isBuyNow) {
+        clearBuyNow(); // Buy Now never touched the cart — just drop the session
+      } else {
+        await clearCart();
+      }
       setOrderPlaced(true);
       router.push(`/order-confirmation/${data.orderNumber}`);
     } catch {
@@ -163,7 +238,9 @@ export default function CheckoutClient() {
     }
   };
 
-  if (cartLoading || buyNowLoading) {
+  const waitingForBuyNow = isBuyNow && !buyNowItem && !buyNowFail;
+
+  if (buyNowLoading || waitingForBuyNow || (!isBuyNow && cartLoading)) {
     return (
       <div className="container-page section">
         <div className="animate-pulse space-y-4">
@@ -181,24 +258,62 @@ export default function CheckoutClient() {
     );
   }
 
+  // Buy Now failed (expired session / variant gone / out of stock)
+  if (isBuyNow && !buyNowItem && buyNowFail) {
+    return (
+      <div className="container-page section">
+        <h1 className="heading-lg mb-8" style={{ color: "var(--text-primary)" }}>Checkout</h1>
+        <div className="card p-6 max-w-xl">
+          <div
+            className="p-4 rounded-lg text-sm mb-4"
+            style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
+            role="alert"
+          >
+            {buyNowFail.message}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {buyNowFail.slug && (
+              <Link href={`/product/${buyNowFail.slug}`} className="btn btn-primary">
+                Choose another size
+              </Link>
+            )}
+            <Link href="/" className="btn btn-ghost">Continue Shopping</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const displayItems = isBuyNow && buyNowItem ? [buyNowItem] : (cart.items || []);
   const displaySubtotal = isBuyNow && buyNowItem
     ? (buyNowItem.salePrice || buyNowItem.regularPrice) * buyNowItem.quantity
     : cart.subtotal;
 
-  if (displayItems.length === 0) return null;
-
-  let shippingFee = 200;
-  let freeShippingThreshold = 5000;
-  if (shippingRules.length > 0) {
-    const activeRule = shippingRules.find((r) => r.type === "FLAT" || r.type === "FREE") || shippingRules[0];
-    if (activeRule) {
-      shippingFee = Number(activeRule.amount) || 0;
-      freeShippingThreshold = activeRule.freeShippingThreshold ? Number(activeRule.freeShippingThreshold) : null;
-    }
+  // Friendly empty-cart state (a redirect to /cart also fires for this case)
+  if (displayItems.length === 0) {
+    return (
+      <div className="container-page section">
+        <h1 className="heading-lg mb-8" style={{ color: "var(--text-primary)" }}>Checkout</h1>
+        <div className="card p-8 text-center max-w-xl">
+          <p className="mb-4" style={{ color: "var(--text-secondary)" }}>
+            Your cart is empty.
+          </p>
+          <Link href="/" className="btn btn-primary">Continue Shopping</Link>
+        </div>
+      </div>
+    );
   }
-  const qualifiesForFreeShipping = freeShippingThreshold && displaySubtotal >= freeShippingThreshold;
-  const finalShippingFee = qualifiesForFreeShipping ? 0 : shippingFee;
+
+  // Product page link shown when an item ran out of stock at order time
+  const stockErrorSlug = isBuyNow
+    ? buyNowItem?.slug || buyNowFail?.slug || ""
+    : cart.items?.[0]?.product?.slug || "";
+
+  // Same shared calculation the server uses when saving the order
+  const { fee: finalShippingFee, freeShippingThreshold } = resolveShipping(
+    shippingRules,
+    displaySubtotal
+  );
   const total = displaySubtotal + finalShippingFee;
 
   return (
@@ -227,8 +342,17 @@ export default function CheckoutClient() {
         <div
           className="mb-6 p-4 rounded-lg text-sm"
           style={{ background: "var(--danger-soft)", color: "var(--danger)" }}
+          role="alert"
         >
-          {error}
+          <span>{error}</span>
+          {stockErrorSlug && /stock|available/i.test(error) && (
+            <>
+              {" "}
+              <Link href={`/product/${stockErrorSlug}`} className="underline font-medium">
+                Choose another size
+              </Link>
+            </>
+          )}
         </div>
       )}
 

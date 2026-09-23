@@ -75,7 +75,7 @@ export default function ProductCard({ product, clean = false }) {
   if (clean) {
     return (
       <div
-        className="group block"
+        className="group relative block cursor-pointer"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -90,7 +90,7 @@ export default function ProductCard({ product, clean = false }) {
               alt={product.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
             />
           ) : (
@@ -104,7 +104,7 @@ export default function ProductCard({ product, clean = false }) {
           {/* SALE badge */}
           {hasSale && (
             <span
-              className="absolute top-2 left-2 z-10 text-xs font-semibold px-2 py-0.5"
+              className="absolute top-2 left-2 z-10 text-xs font-semibold px-2 py-0.5 pointer-events-none"
               style={{ background: "var(--danger)", color: "var(--bg)" }}
             >
               SALE
@@ -156,14 +156,18 @@ export default function ProductCard({ product, clean = false }) {
         </div>
 
         {/* Info area - minimal */}
-        <Link href={`/product/${product.slug}`} className="block">
-          <h3
-            className="text-sm truncate hover:underline"
-            style={{ color: "var(--text-primary)" }}
+        <h3
+          className="text-sm truncate group-hover:underline"
+          style={{ color: "var(--text-primary)" }}
+        >
+          {/* Stretched link — makes the entire card clickable */}
+          <Link
+            href={`/product/${product.slug}`}
+            className="after:absolute after:inset-0 after:content-['']"
           >
             {product.name}
-          </h3>
-        </Link>
+          </Link>
+        </h3>
 
         <div className="mt-1">
           {hasSale ? (
@@ -183,7 +187,7 @@ export default function ProductCard({ product, clean = false }) {
         </div>
 
         {/* Size pills - single line, max 6 + overflow */}
-        <div className="flex flex-nowrap items-center gap-1.5 mt-2 h-7 overflow-hidden opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity">
+        <div className="relative z-10 flex flex-nowrap items-center gap-1.5 mt-2 h-7 overflow-hidden opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity">
           {visibleSizes.map((size) => {
             const available = isSizeAvailable(size);
             return (
@@ -229,7 +233,7 @@ export default function ProductCard({ product, clean = false }) {
   // Default card look (for homepage)
   return (
     <div
-      className="group block"
+      className="group relative block cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -245,7 +249,7 @@ export default function ProductCard({ product, clean = false }) {
               alt={product.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
               loading="lazy"
             />
           ) : (
@@ -258,7 +262,7 @@ export default function ProductCard({ product, clean = false }) {
 
           {/* SALE badge */}
           {hasSale && (
-            <span className="badge badge-danger absolute top-2 left-2 z-10">
+            <span className="badge badge-danger absolute top-2 left-2 z-10 pointer-events-none">
               SALE
             </span>
           )}
@@ -309,14 +313,18 @@ export default function ProductCard({ product, clean = false }) {
 
         {/* Info area */}
         <div className="p-3">
-          <Link href={`/product/${product.slug}`} className="block">
-            <h3
-              className="text-sm font-medium truncate hover:underline"
-              style={{ color: "var(--text-primary)" }}
+          <h3
+            className="text-sm font-medium truncate group-hover:underline"
+            style={{ color: "var(--text-primary)" }}
+          >
+            {/* Stretched link — makes the entire card clickable */}
+            <Link
+              href={`/product/${product.slug}`}
+              className="after:absolute after:inset-0 after:content-['']"
             >
               {product.name}
-            </h3>
-          </Link>
+            </Link>
+          </h3>
 
           <div className="mt-1.5">
             {hasSale ? (
@@ -336,7 +344,7 @@ export default function ProductCard({ product, clean = false }) {
           </div>
 
           {/* Size pills - single line, max 6 + overflow */}
-          <div className="flex flex-nowrap items-center gap-1.5 mt-2 h-7 overflow-hidden opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity">
+          <div className="relative z-10 flex flex-nowrap items-center gap-1.5 mt-2 h-7 overflow-hidden opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity">
             {visibleSizes.map((size) => {
               const available = isSizeAvailable(size);
               return (
