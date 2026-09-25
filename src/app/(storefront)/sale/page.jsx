@@ -6,9 +6,9 @@ import { getSaleProducts } from "@/features/cms/homepage.service";
 export const dynamic = "force-static";
 
 export const metadata = {
-  title: "Sale | WEJ Shoes",
+  title: "Sale | HADAIRE FOOTWEAR",
   description:
-    "Grab discounted footwear at WEJ Shoes. Limited time offers on premium shoes.",
+    "Grab discounted footwear at HADAIRE FOOTWEAR. Limited time offers on premium shoes.",
 };
 
 export default async function SalePage() {

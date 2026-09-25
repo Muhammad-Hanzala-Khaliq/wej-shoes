@@ -3,9 +3,12 @@ import FaqAccordion from "@/components/storefront/FaqAccordion";
 import PageHero from "@/components/storefront/PageHero";
 
 export const metadata = {
-  title: "FAQ | WEJ Shoes",
+  title: "FAQ | HADAIRE FOOTWEAR",
   description:
-    "Frequently asked questions about orders, payment, returns, and products at WEJ Shoes.",
+    "Frequently asked questions about orders, payment, returns, and products at HADAIRE FOOTWEAR.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/faq`,
+  },
 };
 
 const FAQ_DATA = [

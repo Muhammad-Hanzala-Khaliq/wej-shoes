@@ -2,9 +2,12 @@ import Link from "next/link";
 import PageHero from "@/components/storefront/PageHero";
 
 export const metadata = {
-  title: "About Us | WEJ Shoes",
+  title: "About Us | HADAIRE FOOTWEAR",
   description:
-    "Learn about WEJ Shoes - Premium footwear brand in Pakistan offering quality craftsmanship and modern designs.",
+    "Learn about HADAIRE FOOTWEAR - Premium footwear brand in Pakistan offering quality craftsmanship and modern designs.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/about`,
+  },
 };
 
 const VALUES = [
@@ -64,7 +67,7 @@ export default function AboutPage() {
       <PageHero
         eyebrow="Company"
         title="Our Story"
-        subtitle="WEJ Shoes was born from a simple belief: everyone deserves access to premium footwear without compromising on quality or breaking the bank."
+        subtitle="HADAIRE FOOTWEAR was born from a simple belief: everyone deserves access to premium footwear without compromising on quality or breaking the bank."
       />
 
       {/* Mission */}
@@ -84,7 +87,7 @@ export default function AboutPage() {
       <section className="bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
           <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">
-            Why Choose WEJ
+            Why Choose HADAIRE FOOTWEAR
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {VALUES.map((value) => (

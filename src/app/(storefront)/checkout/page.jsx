@@ -4,8 +4,8 @@ import { getCheckoutVariant } from "@/features/catalog/product.service";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Checkout | WEJ Shoes",
-  description: "Complete your WEJ Shoes order with Cash on Delivery payment.",
+  title: "Checkout | HADAIRE FOOTWEAR",
+  description: "Complete your HADAIRE FOOTWEAR order with Cash on Delivery payment.",
 };
 
 export default async function CheckoutPage({ searchParams }) {

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSettings } from "@/features/cms/settings-context";
 
 const quickLinks = [
@@ -21,22 +22,23 @@ const customerService = [
 ];
 
 export default function Footer() {
-  const { storeName, supportEmail, phone, whatsappNumber } = useSettings();
+  const { supportEmail, phone, whatsappNumber } = useSettings();
+  const contactEmail = supportEmail || "info@hadairefootwear.com";
 
   return (
     <footer style={{ background: "var(--ink)", color: "#a3a3a3" }}>
       <div className="container-page py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3
-              className="font-display text-lg font-bold mb-4"
-              style={{ color: "var(--bg)" }}
-            >
-              {storeName}
-            </h3>
+            <Image
+              src="/logo-white.png"
+              alt="HADAIRE FOOTWEAR"
+              width={112}
+              height={72}
+              className="h-17 w-26.25 md:h-18 md:w-28"
+            />
             <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
-              Premium footwear for men and women. Quality craftsmanship, modern
-              designs, and unbeatable comfort.
+              Premium footwear, crafted for elegance.
             </p>
             {/* Social links: add real URLs before enabling */}
             <div className="flex gap-4">
@@ -132,7 +134,7 @@ export default function Footer() {
               Contact Us
             </h4>
             <ul className="space-y-3 text-sm">
-              {supportEmail && (
+              {contactEmail && (
                 <li className="flex items-start gap-2">
                   <svg
                     className="w-4 h-4 mt-0.5 flex-shrink-0"
@@ -147,7 +149,7 @@ export default function Footer() {
                       d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                     />
                   </svg>
-                  <span>{supportEmail}</span>
+                  <span>{contactEmail}</span>
                 </li>
               )}
               {phone && (
@@ -189,7 +191,7 @@ export default function Footer() {
         <div className="container-page py-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              &copy; {new Date().getFullYear()} {storeName}. All rights
+              &copy; {new Date().getFullYear()} HADAIRE FOOTWEAR. All rights
               reserved.
             </p>
             <div

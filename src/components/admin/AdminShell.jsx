@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { adminSignOut } from "@/app/(admin)/admin/actions";
 
@@ -145,10 +146,14 @@ export default function AdminShell({ children, userName }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="w-8 h-8 bg-black text-white rounded-lg flex items-center justify-center font-bold text-sm">
-            A
-          </div>
-          <span className="font-semibold text-gray-900">Admin Panel</span>
+          <Image
+            src="/icon.png"
+            alt=""
+            width={32}
+            height={32}
+            className="w-8 h-8 rounded-lg"
+          />
+          <span className="font-semibold text-gray-900">HADAIRE</span>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600 hidden sm:block">{userName}</span>
@@ -183,10 +188,14 @@ export default function AdminShell({ children, userName }) {
           {/* Mobile close button */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-white text-black rounded-lg flex items-center justify-center font-bold text-sm">
-                A
-              </div>
-              <span className="font-semibold">Admin Panel</span>
+              <Image
+                src="/icon.png"
+                alt=""
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-lg ring-1 ring-white/20"
+              />
+              <span className="font-semibold">HADAIRE</span>
             </div>
             <button
               onClick={closeMenu}

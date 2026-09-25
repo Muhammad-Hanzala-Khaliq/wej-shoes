@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "Page Not Found | WEJ Shoes",
+  title: "Page Not Found | HADAIRE FOOTWEAR",
 };
 
 export default function NotFound() {

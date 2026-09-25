@@ -2,8 +2,11 @@ import Link from "next/link";
 import PageHero from "@/components/storefront/PageHero";
 
 export const metadata = {
-  title: "Terms of Service | WEJ Shoes",
-  description: "Terms and conditions for using WEJ Shoes online store.",
+  title: "Terms of Service | HADAIRE FOOTWEAR",
+  description: "Terms and conditions for using HADAIRE FOOTWEAR online store.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/terms`,
+  },
 };
 
 const SECTIONS = [
@@ -15,7 +18,7 @@ const SECTIONS = [
     ),
     title: "Acceptance of Terms",
     content:
-      "By accessing or using the WEJ Shoes website and placing an order, you agree to be bound by these Terms of Service. If you do not agree with any part of these terms, please do not use our website.",
+      "By accessing or using the HADAIRE FOOTWEAR website and placing an order, you agree to be bound by these Terms of Service. If you do not agree with any part of these terms, please do not use our website.",
   },
   {
     icon: (
@@ -76,7 +79,7 @@ const SECTIONS = [
     ),
     title: "Intellectual Property",
     content:
-      "All content on this website, including but not limited to logos, images, text, graphics, and design elements, is the property of WEJ Shoes and is protected by applicable intellectual property laws. You may not reproduce, distribute, or create derivative works from any content without our express written permission.",
+      "All content on this website, including but not limited to logos, images, text, graphics, and design elements, is the property of HADAIRE FOOTWEAR and is protected by applicable intellectual property laws. You may not reproduce, distribute, or create derivative works from any content without our express written permission.",
   },
   {
     icon: (
@@ -86,7 +89,7 @@ const SECTIONS = [
     ),
     title: "Limitation of Liability",
     content:
-      "WEJ Shoes shall not be held liable for any indirect, incidental, or consequential damages arising from the use of our website or products. We are not responsible for delivery delays caused by third-party courier services or circumstances beyond our reasonable control. Our total liability for any claim shall not exceed the amount paid for the product in question.",
+      "HADAIRE FOOTWEAR shall not be held liable for any indirect, incidental, or consequential damages arising from the use of our website or products. We are not responsible for delivery delays caused by third-party courier services or circumstances beyond our reasonable control. Our total liability for any claim shall not exceed the amount paid for the product in question.",
   },
   {
     icon: (

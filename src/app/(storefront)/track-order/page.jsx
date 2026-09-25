@@ -3,8 +3,8 @@ import TrackOrderClient from "@/components/storefront/TrackOrderClient";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Track Order | WEJ Shoes",
-  description: "Track your WEJ Shoes order status using your order number and phone number.",
+  title: "Track Order | HADAIRE FOOTWEAR",
+  description: "Track your HADAIRE FOOTWEAR order status using your order number and phone number.",
 };
 
 export default function TrackOrderPage() {

@@ -2,9 +2,12 @@ import Link from "next/link";
 import PageHero from "@/components/storefront/PageHero";
 
 export const metadata = {
-  title: "Shipping Policy | WEJ Shoes",
+  title: "Shipping Policy | HADAIRE FOOTWEAR",
   description:
     "Learn about our shipping policy, delivery times, and cash on delivery options.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/policies/shipping`,
+  },
 };
 
 export default function ShippingPolicyPage() {
@@ -144,7 +147,7 @@ export default function ShippingPolicyPage() {
               </Link>{" "}
               page
             </li>
-            <li>Enter your order number (e.g., WEJ-00001)</li>
+            <li>Enter your order number (e.g., ORD-00001)</li>
             <li>Enter the phone number used during checkout</li>
             <li>View your order status in real-time</li>
           </ol>

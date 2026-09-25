@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { getSettings } from "@/lib/api/settings";
 
 const SettingsContext = createContext({
-  storeName: "WEJ Shoes",
+  storeName: "HADAIRE FOOTWEAR",
   logoUrl: "",
   supportEmail: "",
   phone: "",
@@ -16,7 +16,7 @@ const SettingsContext = createContext({
 
 export function SettingsProvider({ children }) {
   const [settings, setSettings] = useState({
-    storeName: "WEJ Shoes",
+    storeName: "HADAIRE FOOTWEAR",
     logoUrl: "",
     supportEmail: "",
     phone: "",
@@ -31,7 +31,7 @@ export function SettingsProvider({ children }) {
       try {
         const data = await getSettings();
         setSettings({
-          storeName: data.storeName || "WEJ Shoes",
+          storeName: data.storeName || "HADAIRE FOOTWEAR",
           logoUrl: data.logoUrl || "",
           supportEmail: data.supportEmail || "",
           phone: data.phone || "",

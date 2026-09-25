@@ -73,7 +73,7 @@ export default function SettingsClient({ initialSettings }) {
           <div>
             <h2 className="text-lg font-semibold mb-4">General</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Store Name" name="storeName" value={settings.storeName} onChange={handleChange} placeholder="WEJ Shoes" required />
+              <Input label="Store Name" name="storeName" value={settings.storeName} onChange={handleChange} placeholder="HADAIRE FOOTWEAR" required />
               <Input label="Logo URL" name="logoUrl" value={settings.logoUrl} onChange={handleChange} placeholder="https://..." />
             </div>
           </div>

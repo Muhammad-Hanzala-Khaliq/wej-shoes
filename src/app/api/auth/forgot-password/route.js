@@ -24,7 +24,7 @@ export async function POST(request) {
 
       await sendEmail({
         to: userEmail,
-        subject: "Reset Your WEJ Shoes Password",
+        subject: "Reset Your HADAIRE FOOTWEAR Password",
         html: passwordResetEmail(resetUrl),
       });
     }

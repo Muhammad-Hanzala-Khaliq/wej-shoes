@@ -6,12 +6,12 @@ export function passwordResetEmail(resetUrl) {
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:sans-serif;">
   <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:8px;overflow:hidden;">
     <div style="background:#000;padding:32px;text-align:center;">
-      <h1 style="color:#fff;margin:0;font-size:24px;">WEJ Shoes</h1>
+      <h1 style="color:#fff;margin:0;font-size:24px;">HADAIRE FOOTWEAR</h1>
     </div>
     <div style="padding:32px;">
       <h2 style="color:#000;margin:0 0 16px;">Password Reset Request</h2>
       <p style="color:#333;line-height:1.6;margin:0 0 24px;">
-        We received a request to reset your password for your WEJ Shoes account.
+        We received a request to reset your password for your HADAIRE FOOTWEAR account.
       </p>
       <a href="${resetUrl}" style="display:inline-block;background:#000;color:#fff;padding:14px 28px;text-decoration:none;border-radius:4px;font-weight:600;">
         Reset Password
@@ -21,7 +21,7 @@ export function passwordResetEmail(resetUrl) {
       </p>
     </div>
     <div style="background:#f5f5f5;padding:24px;text-align:center;">
-      <p style="color:#999;font-size:12px;margin:0;">© ${new Date().getFullYear()} WEJ Shoes. All rights reserved.</p>
+      <p style="color:#999;font-size:12px;margin:0;">© ${new Date().getFullYear()} HADAIRE FOOTWEAR. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -47,7 +47,7 @@ export function orderConfirmationEmail(order) {
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:sans-serif;">
   <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:8px;overflow:hidden;">
     <div style="background:#000;padding:32px;text-align:center;">
-      <h1 style="color:#fff;margin:0;font-size:24px;">WEJ Shoes</h1>
+      <h1 style="color:#fff;margin:0;font-size:24px;">HADAIRE FOOTWEAR</h1>
     </div>
     <div style="padding:32px;">
       <h2 style="color:#000;margin:0 0 8px;">Order Confirmed!</h2>
@@ -91,7 +91,7 @@ export function orderConfirmationEmail(order) {
       </p>
     </div>
     <div style="background:#f5f5f5;padding:24px;text-align:center;">
-      <p style="color:#999;font-size:12px;margin:0;">© ${new Date().getFullYear()} WEJ Shoes. All rights reserved.</p>
+      <p style="color:#999;font-size:12px;margin:0;">© ${new Date().getFullYear()} HADAIRE FOOTWEAR. All rights reserved.</p>
     </div>
   </div>
 </body>

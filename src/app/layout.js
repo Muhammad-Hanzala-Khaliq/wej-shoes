@@ -21,8 +21,43 @@ const roboto = Roboto({
 });
 
 export const metadata = {
-  title: "WEJ Shoes - Premium Footwear",
-  description: "Quality footwear for men and women",
+  title: "HADAIRE FOOTWEAR | Premium Luxury Shoes",
+  description:
+    "HADAIRE FOOTWEAR - premium luxury footwear for men, women, and kids in Pakistan. Elegant craftsmanship, Cash on Delivery available.",
+  openGraph: {
+    title: "HADAIRE FOOTWEAR | Premium Luxury Shoes",
+    siteName: "HADAIRE FOOTWEAR",
+    description:
+      "HADAIRE FOOTWEAR - premium luxury footwear for men, women, and kids in Pakistan. Elegant craftsmanship, Cash on Delivery available.",
+    type: "website",
+  },
+  twitter: {
+    title: "HADAIRE FOOTWEAR | Premium Luxury Shoes",
+    description:
+      "HADAIRE FOOTWEAR - premium luxury footwear for men, women, and kids in Pakistan. Elegant craftsmanship, Cash on Delivery available.",
+  },
+};
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "HADAIRE FOOTWEAR",
+  url: siteUrl,
+  logo: `${siteUrl}/logo-light.png`,
+  description: "Premium luxury footwear for men and women",
+  contactPoint: {
+    "@type": "ContactPoint",
+    telephone: "+92-305-2082552",
+    contactType: "customer service",
+    email: "info@hadairefootwear.com",
+    availableLanguage: ["English", "Urdu"],
+  },
+  address: {
+    "@type": "PostalAddress",
+    addressCountry: "PK",
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -44,10 +79,16 @@ export default function RootLayout({ children }) {
             <CartToast />
             <ScrollToTop />
             <SettingsProvider>
-              <main id="main-content" className="flex-1">{children}</main>
+              <main id="main-content" className="flex-1 min-h-screen">{children}</main>
             </SettingsProvider>
           </CartProvider>
         </SessionProvider>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema),
+          }}
+        />
       </body>
     </html>
   );

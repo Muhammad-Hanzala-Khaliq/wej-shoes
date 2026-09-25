@@ -1,9 +1,13 @@
 import Link from "next/link";
 import PageHero from "@/components/storefront/PageHero";
+import { getStoreSettings } from "@/features/cms/cms.service";
 
 export const metadata = {
-  title: "Privacy Policy | WEJ Shoes",
-  description: "How WEJ Shoes collects, uses, and protects your personal data.",
+  title: "Privacy Policy | HADAIRE FOOTWEAR",
+  description: "How HADAIRE FOOTWEAR collects, uses, and protects your personal data.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/privacy-policy`,
+  },
 };
 
 const SECTIONS = [
@@ -15,7 +19,7 @@ const SECTIONS = [
     ),
     title: "Information We Collect",
     content:
-      "When you place an order or create an account on WEJ Shoes, we collect personal information necessary to process your purchase and provide our services. This includes your full name, email address, phone number, shipping address, and order history. We also collect standard web analytics data such as browser type, device information, and pages visited to improve your shopping experience.",
+      "When you place an order or create an account on HADAIRE FOOTWEAR, we collect personal information necessary to process your purchase and provide our services. This includes your full name, email address, phone number, shipping address, and order history. We also collect standard web analytics data such as browser type, device information, and pages visited to improve your shopping experience.",
   },
   {
     icon: (
@@ -66,7 +70,7 @@ const SECTIONS = [
     ),
     title: "Your Rights",
     content:
-      "You have the right to request access to the personal data we hold about you, ask for corrections to any inaccurate information, and request deletion of your data where legally permissible. To exercise any of these rights, please email us at support@wejshoes.com and we will respond within a reasonable timeframe.",
+      "You have the right to request access to the personal data we hold about you, ask for corrections to any inaccurate information, and request deletion of your data where legally permissible. To exercise any of these rights, please email us at __CONTACT_EMAIL__ and we will respond within a reasonable timeframe.",
   },
   {
     icon: (
@@ -90,7 +94,16 @@ const SECTIONS = [
   },
 ];
 
-export default function PrivacyPolicyPage() {
+export default async function PrivacyPolicyPage() {
+  let settings = {};
+  try {
+    settings = await getStoreSettings();
+  } catch {
+    // ignore - use fallback below
+  }
+  // Admin Settings email if configured, otherwise the brand fallback
+  const contactEmail = settings.supportEmail || "info@hadairefootwear.com";
+
   return (
     <div>
       <PageHero
@@ -116,7 +129,9 @@ export default function PrivacyPolicyPage() {
                   {section.title}
                 </h2>
               </div>
-              <p className="text-gray-700 leading-relaxed">{section.content}</p>
+              <p className="text-gray-700 leading-relaxed">
+                {section.content.replace("__CONTACT_EMAIL__", contactEmail)}
+              </p>
             </div>
           ))}
         </div>

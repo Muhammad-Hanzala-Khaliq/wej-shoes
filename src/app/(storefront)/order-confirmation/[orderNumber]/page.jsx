@@ -5,7 +5,7 @@ import { formatPrice } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Order Confirmation - WEJ Shoes",
+  title: "Order Confirmation - HADAIRE FOOTWEAR",
 };
 
 export default async function OrderConfirmationPage({ params }) {

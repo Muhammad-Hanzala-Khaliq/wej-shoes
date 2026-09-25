@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import ProductCard from "@/components/storefront/ProductCard";
 import CategoryCarousel from "@/components/storefront/CategoryCarousel";
+import SplitFeatureSection from "@/components/storefront/SplitFeatureSection";
 import {
   getHeroContent,
   getHomepageCategories,
@@ -26,9 +27,50 @@ function serializeDecimal(data) {
 }
 
 export const metadata = {
-  title: "WEJ Shoes - Premium Footwear for Men, Women & Kids",
+  title: "HADAIRE FOOTWEAR - Premium Footwear for Men, Women & Kids",
   description:
-    "Discover premium footwear for men, women, and kids at WEJ Shoes. Quality craftsmanship, modern designs, and unbeatable comfort. Cash on Delivery available across Pakistan.",
+    "Discover premium footwear for men, women, and kids at HADAIRE FOOTWEAR. Quality craftsmanship, modern designs, and unbeatable comfort. Cash on Delivery available across Pakistan.",
+};
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "HADAIRE FOOTWEAR",
+  url: siteUrl,
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: `${siteUrl}/search?q={search_term_string}`,
+    },
+    "query-input": "required name=search_term_string",
+  },
+};
+
+// ─── EDITABLE CONTENT: split feature sections (local images in /public) ───
+const CONFIG = {
+  spotlight: {
+    image: "/new-section-1.jpg",
+    imageAlt: "Woman wearing premium statement footwear — The Spotlight Court",
+    heading: "THE SPOTLIGHT COURT",
+    subtitle: "SPARKLE, STRUCTURE, AND A STATEMENT IN EVERY STEP.",
+    description:
+      "Experience premium quality and exceptional design with our carefully curated products.",
+    buttonText: "Step Into Luxe",
+    buttonLink: "/collections/women",
+  },
+  legacy: {
+    image: "/new-section.jpg",
+    imageAlt: "Man wearing premium formal shoes — The Executive Legacy",
+    heading: "THE EXECUTIVE LEGACY",
+    subtitle: "PREMIUM FORMALS CRAFTED FOR MEN WHO LEAVE A MARK.",
+    description:
+      "Experience premium quality and exceptional design with our carefully curated products.",
+    buttonText: "Explore Legacy",
+    buttonLink: "/collections/men",
+  },
 };
 
 export default async function HomePage() {
@@ -56,6 +98,11 @@ export default async function HomePage() {
 
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+
       {/* SECTION 1: HERO — priority for LCP */}
       <section className="relative w-full h-[calc(100svh-4rem)] min-h-screen overflow-hidden">
         <div className="absolute inset-0">
@@ -70,7 +117,10 @@ export default async function HomePage() {
               quality={85}
             />
           ) : (
-            <div className="w-full h-full" style={{ background: "var(--ink)" }} />
+            <div
+              className="w-full h-full"
+              style={{ background: "var(--ink)" }}
+            />
           )}
 
           {/* Gradient overlay */}
@@ -114,13 +164,10 @@ export default async function HomePage() {
       </section>
 
       {/* SECTION 3: PREMIUM (Featured Products) */}
-      <section>
+      <section className="pt-12 md:pt-6">
         <div className="container-page section">
           <div className="flex items-center justify-between mb-10">
-            <h2
-              className="heading-lg"
-              style={{ color: "var(--text-primary)" }}
-            >
+            <h2 className="heading-lg" style={{ color: "var(--text-primary)" }}>
               PREMIUM
             </h2>
             <Link href="/sale" className="link text-sm">
@@ -143,68 +190,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 4: BEYOND TRENDS */}
-      <section className="relative h-[calc(100svh-4rem)] min-h-screen">
-        <div className="grid grid-cols-1 md:grid-cols-2 h-full">
-          {/* Men */}
-          <div className="relative overflow-hidden">
-            <Image
-              src="/beyond-the-trend-1.jpg"
-              alt="Men's Collection"
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
-              quality={80}
-            />
-          </div>
+      {/* SPLIT #1: THE SPOTLIGHT COURT (Women) */}
+      <SplitFeatureSection {...CONFIG.spotlight} />
 
-          {/* Women */}
-          <div className="relative overflow-hidden">
-            <Image
-              src="/beyond-the-trend-2.jpg"
-              alt="Women's Collection"
-              fill
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
-              quality={80}
-            />
-          </div>
-        </div>
-
-        {/* Centered overlay */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-center p-6 pointer-events-auto">
-            <h2
-              className="heading-xl mb-3"
-              style={{
-                color: "#fff",
-                textShadow: "0 2px 20px rgba(0,0,0,0.4)",
-              }}
-            >
-              BEYOND TRENDS
-            </h2>
-            <p
-              className="text-sm md:text-base mb-8"
-              style={{
-                color: "rgba(255,255,255,0.9)",
-                textShadow: "0 1px 10px rgba(0,0,0,0.3)",
-              }}
-            >
-              Always in style, always in vogue
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/collections/men" className="btn-white">
-                SHOP MEN
-              </Link>
-              <Link href="/collections/women" className="btn-white-outline">
-                SHOP WOMEN
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 5: NEW ARRIVALS */}
+      {/* SECTION 4: NEW ARRIVALS */}
       <section className="container-page section">
         <div className="flex items-center justify-between mb-10">
           <h2 className="heading-lg" style={{ color: "var(--text-primary)" }}>
@@ -228,6 +217,9 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+
+      {/* SPLIT #2: THE EXECUTIVE LEGACY (Men) */}
+      <SplitFeatureSection {...CONFIG.legacy} />
     </div>
   );
 }

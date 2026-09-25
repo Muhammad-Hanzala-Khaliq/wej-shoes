@@ -11,7 +11,7 @@ export async function getStoreSettings() {
   if (!settings) {
     settings = await prisma.storeSettings.create({
       data: {
-        storeName: "WEJ Shoes",
+        storeName: "HADAIRE FOOTWEAR",
         currency: "PKR",
         codEnabled: true,
       },
@@ -55,7 +55,7 @@ export async function updateStoreSettings(data) {
 
   const result = await prisma.storeSettings.create({
     data: {
-      storeName: data.storeName || "WEJ Shoes",
+      storeName: data.storeName || "HADAIRE FOOTWEAR",
       logoUrl: data.logoUrl || null,
       supportEmail: data.supportEmail || null,
       phone: data.phone || null,

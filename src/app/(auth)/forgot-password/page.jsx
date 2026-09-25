@@ -1,8 +1,8 @@
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
 
 export const metadata = {
-  title: "Forgot Password | WEJ Shoes",
-  description: "Reset your WEJ Shoes account password.",
+  title: "Forgot Password | HADAIRE FOOTWEAR",
+  description: "Reset your HADAIRE FOOTWEAR account password.",
 };
 
 export default function ForgotPasswordPage() {

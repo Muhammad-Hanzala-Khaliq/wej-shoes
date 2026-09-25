@@ -5,10 +5,10 @@ import CookieBanner from "@/components/storefront/CookieBanner";
 
 export default function StorefrontLayout({ children }) {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col">
       <AnnouncementBar />
       <Header />
-      <main className="flex-1">{children}</main>
+      <main className="flex-1 min-h-screen">{children}</main>
       <Footer />
       <CookieBanner />
     </div>

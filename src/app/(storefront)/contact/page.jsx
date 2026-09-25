@@ -3,9 +3,12 @@ import { getStoreSettings } from "@/features/cms/cms.service";
 import PageHero from "@/components/storefront/PageHero";
 
 export const metadata = {
-  title: "Contact Us | WEJ Shoes",
+  title: "Contact Us | HADAIRE FOOTWEAR",
   description:
-    "Get in touch with WEJ Shoes. We're here to help with orders, products, and any questions you have.",
+    "Get in touch with HADAIRE FOOTWEAR. We're here to help with orders, products, and any questions you have.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/contact`,
+  },
 };
 
 export default async function ContactPage() {
@@ -17,6 +20,7 @@ export default async function ContactPage() {
   }
 
   const { supportEmail, phone, whatsappNumber } = settings;
+  const contactEmail = supportEmail || "info@hadairefootwear.com";
 
   return (
     <div>
@@ -35,7 +39,7 @@ export default async function ContactPage() {
                 Contact Information
               </h2>
               <div className="space-y-5">
-                {supportEmail && (
+                {contactEmail && (
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
                       <svg
@@ -54,7 +58,7 @@ export default async function ContactPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">Email</p>
-                      <p className="text-sm text-gray-600">{supportEmail}</p>
+                      <p className="text-sm text-gray-600">{contactEmail}</p>
                     </div>
                   </div>
                 )}

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { useSettings } from "@/features/cms/settings-context";
 import CartBadge from "./CartBadge";
@@ -218,9 +219,20 @@ export default function Header() {
     >
       <div className="container-page">
         <div className="flex items-center justify-between h-16">
-          <div className="flex-shrink-0">
-            <Link href="/" aria-label="WEJ Shoes - Home">
-              Wej Shoes New
+          <div className="shrink-0">
+            <Link
+              href="/"
+              aria-label="HADAIRE FOOTWEAR - Home"
+              className="flex items-center"
+            >
+              <Image
+                src="/logo-light.png"
+                alt="HADAIRE FOOTWEAR"
+                width={112}
+                height={72}
+                className="h-17 w-26.25 md:h-18 md:w-28"
+                priority
+              />
             </Link>
           </div>
 
@@ -230,7 +242,9 @@ export default function Header() {
                 key={link.href}
                 href={link.href}
                 className="text-sm font-medium link"
-                style={{ color: link.highlight ? "#dc2626" : "var(--text-secondary)" }}
+                style={{
+                  color: link.highlight ? "#dc2626" : "var(--text-secondary)",
+                }}
               >
                 {link.label}
               </Link>

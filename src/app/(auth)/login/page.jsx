@@ -4,8 +4,8 @@ import { auth } from "@/auth";
 import LoginForm from "@/components/auth/LoginForm";
 
 export const metadata = {
-  title: "Login | WEJ Shoes",
-  description: "Login to your WEJ Shoes account to track orders and manage your profile.",
+  title: "Login | HADAIRE FOOTWEAR",
+  description: "Login to your HADAIRE FOOTWEAR account to track orders and manage your profile.",
 };
 
 function LoginFallback() {

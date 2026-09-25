@@ -3,7 +3,7 @@ import { getAdminSession } from "@/lib/admin-auth";
 import AdminLoginForm from "@/components/admin/AdminLoginForm";
 
 export const metadata = {
-  title: "Admin Login | WEJ Admin",
+  title: "Admin Login | HADAIRE FOOTWEAR",
   robots: {
     index: false,
     follow: false,

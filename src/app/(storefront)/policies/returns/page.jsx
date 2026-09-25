@@ -2,9 +2,12 @@ import Link from "next/link";
 import PageHero from "@/components/storefront/PageHero";
 
 export const metadata = {
-  title: "Return & Exchange Policy | WEJ Shoes",
+  title: "Return & Exchange Policy | HADAIRE FOOTWEAR",
   description:
-    "Learn about our return and exchange policy for orders placed at WEJ Shoes.",
+    "Learn about our return and exchange policy for orders placed at HADAIRE FOOTWEAR.",
+  alternates: {
+    canonical: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/policies/returns`,
+  },
 };
 
 export default function ReturnPolicyPage() {

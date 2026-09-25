@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCollectionInfo, getCollectionProducts, getAvailableFilters } from "@/features/catalog/collection.service";
 import ProductGrid from "@/components/storefront/ProductGrid";
 import CollectionToolbar from "@/components/storefront/CollectionToolbar";
+import BreadcrumbSchema from "@/components/SEO/BreadcrumbSchema";
 
 function serialize(data) {
   return JSON.parse(
@@ -19,12 +20,23 @@ export async function generateMetadata({ params }) {
   const info = await getCollectionInfo(slug);
 
   if (!info) {
-    return { title: "Collection Not Found | WEJ Shoes" };
+    return { title: "Collection Not Found | HADAIRE FOOTWEAR" };
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
   return {
-    title: `${info.title} | WEJ Shoes`,
+    title: `${info.title} | HADAIRE FOOTWEAR`,
     description: info.description,
+    openGraph: {
+      title: info.title,
+      description: info.description || `Shop ${info.title} at HADAIRE FOOTWEAR`,
+      url: `${siteUrl}/collections/${slug}`,
+      type: "website",
+    },
+    alternates: {
+      canonical: `${siteUrl}/collections/${slug}`,
+    },
   };
 }
 
@@ -104,8 +116,20 @@ export default async function CollectionPage({ params, searchParams }) {
     return str ? `?${str}` : "";
   }
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
   return (
     <div className="container-page py-10 md:py-16">
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: siteUrl },
+          {
+            name: info.title,
+            url: `${siteUrl}/collections/${slug}`,
+          },
+        ]}
+      />
+
       {/* Title */}
       <h1
         className="text-4xl md:text-6xl font-light uppercase tracking-wide mb-10"

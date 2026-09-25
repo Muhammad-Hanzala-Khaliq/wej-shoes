@@ -5,8 +5,8 @@ import { getAdminSession } from "@/lib/admin-auth";
 
 export const metadata = {
   title: {
-    template: "%s | WEJ Admin",
-    default: "Admin Dashboard | WEJ Admin",
+    template: "%s | HADAIRE FOOTWEAR",
+    default: "Admin Dashboard | HADAIRE FOOTWEAR",
   },
   robots: {
     index: false,

@@ -5,6 +5,7 @@ import { logError } from "@/lib/logger";
 import ProductGallery from "@/components/storefront/ProductGallery";
 import RelatedProducts from "@/components/storefront/RelatedProducts";
 import ProductInfoPanel from "@/components/storefront/ProductInfoPanel";
+import BreadcrumbSchema from "@/components/SEO/BreadcrumbSchema";
 
 export async function generateStaticParams() {
   const slugs = await getAllProductSlugs();
@@ -38,20 +39,21 @@ export async function generateMetadata({ params }) {
     const product = await getProductBySlug(slug);
 
     if (!product) {
-      return { title: "Product Not Found | WEJ Shoes" };
+      return { title: "Product Not Found | HADAIRE FOOTWEAR" };
     }
 
     const description = product.description
       ? product.description.substring(0, 160)
-      : `Shop ${product.name} at WEJ Shoes. Premium footwear with Cash on Delivery available.`;
+      : `Shop ${product.name} at HADAIRE FOOTWEAR. Premium footwear with Cash on Delivery available.`;
 
     const images = product.images || [];
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
     return {
-      title: `${product.name} | WEJ Shoes`,
+      title: `${product.name} | HADAIRE FOOTWEAR`,
       description,
       alternates: {
-        canonical: `/product/${slug}`,
+        canonical: `${siteUrl}/product/${slug}`,
       },
       openGraph: {
         title: product.name,
@@ -60,11 +62,18 @@ export async function generateMetadata({ params }) {
           url: img.imageUrl,
           alt: img.altText || product.name,
         })),
+        url: `${siteUrl}/product/${slug}`,
+        type: "website",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: product.name,
+        description,
       },
     };
   } catch (error) {
     logError("product:generateMetadata", error, { slug });
-    return { title: "Product | WEJ Shoes" };
+    return { title: "Product | HADAIRE FOOTWEAR" };
   }
 }
 
@@ -102,16 +111,20 @@ export default async function ProductPage({ params, searchParams }) {
     ? Number(variants[0].salePrice)
     : Number(product.regularPrice);
   const inStock = inStockVariants.length > 0;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
-    description: product.description || `Shop ${product.name} at WEJ Shoes`,
+    description: product.description || `Shop ${product.name} at HADAIRE FOOTWEAR`,
     image: images.slice(0, 3).map((img) => img.imageUrl),
-    brand: { "@type": "Brand", name: "WEJ Shoes" },
+    sku: product.id,
+    brand: { "@type": "Brand", name: "HADAIRE FOOTWEAR" },
     category: product.category?.name,
     offers: {
       "@type": "Offer",
+      url: `${siteUrl}/product/${product.slug}`,
       priceCurrency: "PKR",
       price,
       availability: inStock
@@ -121,11 +134,32 @@ export default async function ProductPage({ params, searchParams }) {
     },
   };
 
+  const genderLabel =
+    product.category.gender === "MEN"
+      ? "Men"
+      : product.category.gender === "KIDS"
+        ? "Kids"
+        : "Women";
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <BreadcrumbSchema
+        items={[
+          { name: "Home", url: siteUrl },
+          {
+            name: genderLabel,
+            url: `${siteUrl}/collections/${product.category.gender.toLowerCase()}`,
+          },
+          {
+            name: product.category.name,
+            url: `${siteUrl}/collections/${product.category.slug}`,
+          },
+          { name: product.name },
+        ]}
       />
       <div className="container-page py-8 md:py-12">
         {/* Breadcrumb */}
