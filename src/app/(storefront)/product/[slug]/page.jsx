@@ -6,7 +6,7 @@ import ProductGallery from "@/components/storefront/ProductGallery";
 import RelatedProducts from "@/components/storefront/RelatedProducts";
 import ProductInfoPanel from "@/components/storefront/ProductInfoPanel";
 import BreadcrumbSchema from "@/components/SEO/BreadcrumbSchema";
-
+export const dynamic = "force-dynamic";
 export async function generateStaticParams() {
   const slugs = await getAllProductSlugs();
   return slugs.map((slug) => ({ slug }));
