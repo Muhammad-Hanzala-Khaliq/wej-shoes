@@ -46,8 +46,7 @@ Thumbs.db
 .copilot/
 .ai/
 
-# Prisma
-prisma/migrations/
+
 
 # Misc
 .vercel
