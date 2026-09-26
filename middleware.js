@@ -5,13 +5,14 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const userRole = req.auth?.user?.role;
 
-  // Admin routes protection
-  const adminRoutes = ["/admin/dashboard", "/admin/products", "/admin/categories", "/admin/orders", "/admin/settings"];
-  const isAdminProtected = adminRoutes.some((route) => pathname.startsWith(route));
+  // Admin routes protection — ALL /admin pages ("/admin-login" does not
+  // match "/admin/" so it stays public)
   const isAdminLogin = pathname === "/admin-login";
+  const isProtectedAdmin =
+    pathname === "/admin" || pathname.startsWith("/admin/");
 
   // If trying to access protected admin route
-  if (isAdminProtected) {
+  if (isProtectedAdmin) {
     if (!isLoggedIn) {
       return Response.redirect(new URL("/admin-login", req.nextUrl.origin));
     }
@@ -25,9 +26,13 @@ export default auth((req) => {
     return Response.redirect(new URL("/admin/dashboard", req.nextUrl.origin));
   }
 
-  // Customer protected routes
-  const customerProtectedRoutes = ["/account", "/checkout"];
-  const isCustomerProtected = customerProtectedRoutes.some((route) => pathname.startsWith(route));
+  // Customer protected routes.
+  // NOTE: /checkout, /cart, /track-order, /product/* and /collections/*
+  // are PUBLIC — guest checkout must never redirect to /login.
+  const customerProtectedRoutes = ["/account", "/orders"];
+  const isCustomerProtected = customerProtectedRoutes.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
 
   // Auth routes that logged-in users should not access
   const authRoutes = ["/login", "/signup"];
@@ -52,5 +57,12 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/account/:path*", "/checkout", "/admin/:path*", "/admin-login", "/login", "/signup"],
+  matcher: [
+    "/account/:path*",
+    "/orders/:path*",
+    "/admin/:path*",
+    "/admin-login",
+    "/login",
+    "/signup",
+  ],
 };
