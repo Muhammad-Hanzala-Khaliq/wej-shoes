@@ -27,7 +27,10 @@ function getOptimizedUrl(url, width) {
   return url.replace("/upload/", `/upload/w_${width},f_auto,q_auto/`);
 }
 
-export default function CheckoutClient({ initialBuyNowItem = null, buyNowError = "" }) {
+export default function CheckoutClient({
+  initialBuyNowItem = null,
+  buyNowError = "",
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -40,12 +43,17 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
   const [buyNowItem, setBuyNowItem] = useState(initialBuyNowItem);
   const [buyNowLoading, setBuyNowLoading] = useState(false);
   const [buyNowFail, setBuyNowFail] = useState(
-    buyNowError ? { message: buyNowError, slug: null } : null
+    buyNowError ? { message: buyNowError, slug: null } : null,
   );
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // True from the moment "Place Order" is clicked until this component
+  // unmounts. Skips the empty-cart guard and shows the full-screen overlay
+  // so the empty-cart state can never flash before the redirect to the
+  // confirmation page completes.
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [shippingRules, setShippingRules] = useState([]);
   const [form, setForm] = useState({
@@ -82,7 +90,11 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
         if (buyNowVariantId) {
           const data = await getCheckoutVariant(buyNowVariantId);
           setBuyNowItem({ ...data, quantity: buyNowQuantity });
-          saveBuyNow({ variantId: data.id, quantity: buyNowQuantity, slug: data.slug });
+          saveBuyNow({
+            variantId: data.id,
+            quantity: buyNowQuantity,
+            slug: data.slug,
+          });
           setBuyNowFail(null);
           return;
         }
@@ -91,7 +103,10 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
         const saved = readBuyNow();
         if (saved && !saved.expired) {
           const data = await getCheckoutVariant(saved.variantId);
-          setBuyNowItem({ ...data, quantity: saved.quantity || buyNowQuantity });
+          setBuyNowItem({
+            ...data,
+            quantity: saved.quantity || buyNowQuantity,
+          });
           return;
         }
         if (saved?.slug) {
@@ -107,7 +122,8 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
           router.push(`/product/${saved.slug}?expired=1`);
         } else {
           setBuyNowFail({
-            message: "This size is out of stock or no longer available. Please choose another size.",
+            message:
+              "This size is out of stock or no longer available. Please choose another size.",
             slug: saved?.slug || null,
           });
         }
@@ -116,7 +132,14 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
       }
     }
     loadBuyNow();
-  }, [isBuyNow, initialBuyNowItem, buyNowError, buyNowVariantId, buyNowQuantity, router]);
+  }, [
+    isBuyNow,
+    initialBuyNowItem,
+    buyNowError,
+    buyNowVariantId,
+    buyNowQuantity,
+    router,
+  ]);
 
   // Note: an empty cart renders a friendly "Your cart is empty" state below
   // (no redirect) — this also covers checkout opened directly via URL.
@@ -130,6 +153,13 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
     }
     fetchShippingRules();
   }, []);
+
+  // Auto-dismiss the error toast
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(""), 5000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -167,10 +197,10 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmitting || orderPlaced) return; // guard against double submit
+    if (isPlacingOrder || orderPlaced) return; // guard against double submit
     setError("");
     if (!validate()) return;
-    setIsSubmitting(true);
+    setIsPlacingOrder(true); // set FIRST — overlay must cover the whole submit window
 
     // Build the items list from what the form was given (Buy Now item or cart).
     // Only variantId + quantity are sent — the server re-reads all prices,
@@ -194,7 +224,7 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
 
     if (items.length === 0) {
       setError("Your cart is empty. Please add items before placing an order.");
-      setIsSubmitting(false);
+      setIsPlacingOrder(false);
       return;
     }
 
@@ -217,41 +247,99 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
 
       if (data.errors) {
         setFieldErrors(data.errors);
-        setIsSubmitting(false);
+        setIsPlacingOrder(false);
         return;
       }
       if (data.error) {
         setError(data.error);
-        setIsSubmitting(false);
+        setToast(data.error);
+        setIsPlacingOrder(false);
         return;
       }
+
+      // ── Success ──────────────────────────────────────────────────────────
+      // The server already cleared the DB cart inside this same request.
+      // Start navigation FIRST, then drop the local cart — together with the
+      // isPlacingOrder overlay (and the skipped empty-cart guard) this makes
+      // the empty-cart flash impossible before the confirmation page loads.
+      setOrderPlaced(true);
+      router.push(`/order-confirmation/${data.orderNumber}`);
       if (isBuyNow) {
         clearBuyNow(); // Buy Now never touched the cart — just drop the session
       } else {
-        await clearCart();
+        clearCart(); // never rejects; CartProvider lives in the layout and survives navigation
       }
-      setOrderPlaced(true);
-      router.push(`/order-confirmation/${data.orderNumber}`);
+      // isPlacingOrder intentionally stays true until unmount (overlay covers the transition)
     } catch {
       setError("An error occurred. Please try again.");
-      setIsSubmitting(false);
+      setToast("An error occurred. Please try again.");
+      setIsPlacingOrder(false); // hides overlay, keeps cart intact
     }
   };
+
+  // Full-screen processing overlay + transient error toast. Rendered in EVERY
+  // return path below so nothing (empty-cart state, skeleton) can flash while
+  // the order is being placed or right after it succeeds.
+  const processingChrome = (
+    <>
+      {isPlacingOrder && (
+        <div
+          className="fixed inset-0 z-[60] bg-white/90 backdrop-blur-sm flex flex-col items-center justify-center px-4"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="animate-spin h-10 w-10 rounded-full border-4 border-gray-200 border-t-black" />
+          <p
+            className="mt-5 text-sm font-semibold text-center"
+            style={{ color: "var(--text-primary)" }}
+          >
+            Your Order is Processing...
+          </p>
+          <p
+            className="mt-1 text-xs text-center"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            Please wait, do not close this window.
+          </p>
+        </div>
+      )}
+      {toast && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] max-w-[90vw] px-4 py-3 rounded-lg shadow-lg text-sm text-white text-center"
+          style={{ background: "var(--danger)" }}
+          role="alert"
+        >
+          {toast}
+        </div>
+      )}
+    </>
+  );
 
   const waitingForBuyNow = isBuyNow && !buyNowItem && !buyNowFail;
 
   if (buyNowLoading || waitingForBuyNow || (!isBuyNow && cartLoading)) {
     return (
       <div className="container-page section">
+        {processingChrome}
         <div className="animate-pulse space-y-4">
-          <div className="h-8 rounded w-1/4" style={{ background: "var(--surface-soft)" }} />
+          <div
+            className="h-8 rounded w-1/4"
+            style={{ background: "var(--surface-soft)" }}
+          />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-12 rounded" style={{ background: "var(--surface-soft)" }} />
+                <div
+                  key={i}
+                  className="h-12 rounded"
+                  style={{ background: "var(--surface-soft)" }}
+                />
               ))}
             </div>
-            <div className="h-64 rounded" style={{ background: "var(--surface-soft)" }} />
+            <div
+              className="h-64 rounded"
+              style={{ background: "var(--surface-soft)" }}
+            />
           </div>
         </div>
       </div>
@@ -262,7 +350,13 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
   if (isBuyNow && !buyNowItem && buyNowFail) {
     return (
       <div className="container-page section">
-        <h1 className="heading-lg mb-8" style={{ color: "var(--text-primary)" }}>Checkout</h1>
+        {processingChrome}
+        <h1
+          className="heading-lg mb-8"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Checkout
+        </h1>
         <div className="card p-6 max-w-xl">
           <div
             className="p-4 rounded-lg text-sm mb-4"
@@ -273,32 +367,48 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
           </div>
           <div className="flex flex-wrap gap-3">
             {buyNowFail.slug && (
-              <Link href={`/product/${buyNowFail.slug}`} className="btn btn-primary">
+              <Link
+                href={`/product/${buyNowFail.slug}`}
+                className="btn btn-primary"
+              >
                 Choose another size
               </Link>
             )}
-            <Link href="/" className="btn btn-ghost">Continue Shopping</Link>
+            <Link href="/" className="btn btn-ghost">
+              Continue Shopping
+            </Link>
           </div>
         </div>
       </div>
     );
   }
 
-  const displayItems = isBuyNow && buyNowItem ? [buyNowItem] : (cart.items || []);
-  const displaySubtotal = isBuyNow && buyNowItem
-    ? (buyNowItem.salePrice || buyNowItem.regularPrice) * buyNowItem.quantity
-    : cart.subtotal;
+  const displayItems = isBuyNow && buyNowItem ? [buyNowItem] : cart.items || [];
+  const displaySubtotal =
+    isBuyNow && buyNowItem
+      ? (buyNowItem.salePrice || buyNowItem.regularPrice) * buyNowItem.quantity
+      : cart.subtotal;
 
-  // Friendly empty-cart state (a redirect to /cart also fires for this case)
-  if (displayItems.length === 0) {
+  // Friendly empty-cart state — skipped while an order is being placed:
+  // the cart empties on success, and this state must never flash between
+  // "Place Order" and the redirect to the confirmation page.
+  if (!isPlacingOrder && displayItems.length === 0) {
     return (
       <div className="container-page section">
-        <h1 className="heading-lg mb-8" style={{ color: "var(--text-primary)" }}>Checkout</h1>
+        {processingChrome}
+        <h1
+          className="heading-lg mb-8"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Checkout
+        </h1>
         <div className="card p-8 text-center max-w-xl">
           <p className="mb-4" style={{ color: "var(--text-secondary)" }}>
             Your cart is empty.
           </p>
-          <Link href="/" className="btn btn-primary">Continue Shopping</Link>
+          <Link href="/" className="btn btn-primary">
+            Continue Shopping
+          </Link>
         </div>
       </div>
     );
@@ -312,13 +422,16 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
   // Same shared calculation the server uses when saving the order
   const { fee: finalShippingFee, freeShippingThreshold } = resolveShipping(
     shippingRules,
-    displaySubtotal
+    displaySubtotal,
   );
   const total = displaySubtotal + finalShippingFee;
 
   return (
     <div className="container-page section">
-      <h1 className="heading-lg mb-8" style={{ color: "var(--text-primary)" }}>Checkout</h1>
+      {processingChrome}
+      <h1 className="heading-lg mb-8" style={{ color: "var(--text-primary)" }}>
+        Checkout
+      </h1>
 
       {session ? (
         <div
@@ -330,10 +443,15 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
       ) : (
         <div
           className="mb-6 p-3 rounded-lg text-sm"
-          style={{ background: "var(--surface-soft)", color: "var(--text-secondary)" }}
+          style={{
+            background: "var(--surface-soft)",
+            color: "var(--text-secondary)",
+          }}
         >
           Checking out as guest.{" "}
-          <Link href="/login" className="link">Login</Link>{" "}
+          <Link href="/login" className="link">
+            Login
+          </Link>{" "}
           to track your orders.
         </div>
       )}
@@ -348,7 +466,10 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
           {stockErrorSlug && /stock|available/i.test(error) && (
             <>
               {" "}
-              <Link href={`/product/${stockErrorSlug}`} className="underline font-medium">
+              <Link
+                href={`/product/${stockErrorSlug}`}
+                className="underline font-medium"
+              >
                 Choose another size
               </Link>
             </>
@@ -360,7 +481,12 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="card p-6">
-              <h2 className="heading-md mb-4" style={{ color: "var(--text-primary)" }}>Shipping Address</h2>
+              <h2
+                className="heading-md mb-4"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Shipping Address
+              </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="label">
@@ -375,7 +501,12 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
                     placeholder="John Doe"
                   />
                   {fieldErrors.fullName && (
-                    <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{fieldErrors.fullName}</p>
+                    <p
+                      className="text-xs mt-1"
+                      style={{ color: "var(--danger)" }}
+                    >
+                      {fieldErrors.fullName}
+                    </p>
                   )}
                 </div>
 
@@ -392,13 +523,21 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
                     placeholder="03XXXXXXXXX"
                   />
                   {fieldErrors.phone && (
-                    <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{fieldErrors.phone}</p>
+                    <p
+                      className="text-xs mt-1"
+                      style={{ color: "var(--danger)" }}
+                    >
+                      {fieldErrors.phone}
+                    </p>
                   )}
                 </div>
 
                 <div className="sm:col-span-2">
                   <label className="label">
-                    Email <span style={{ color: "var(--text-muted)" }}>(optional)</span>
+                    Email{" "}
+                    <span style={{ color: "var(--text-muted)" }}>
+                      (optional)
+                    </span>
                   </label>
                   <input
                     type="email"
@@ -412,7 +551,8 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
 
                 <div className="sm:col-span-2">
                   <label className="label">
-                    Address Line 1 <span style={{ color: "var(--danger)" }}>*</span>
+                    Address Line 1{" "}
+                    <span style={{ color: "var(--danger)" }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -423,13 +563,21 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
                     placeholder="House #, Street, Area"
                   />
                   {fieldErrors.addressLine1 && (
-                    <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{fieldErrors.addressLine1}</p>
+                    <p
+                      className="text-xs mt-1"
+                      style={{ color: "var(--danger)" }}
+                    >
+                      {fieldErrors.addressLine1}
+                    </p>
                   )}
                 </div>
 
                 <div className="sm:col-span-2">
                   <label className="label">
-                    Address Line 2 <span style={{ color: "var(--text-muted)" }}>(optional)</span>
+                    Address Line 2{" "}
+                    <span style={{ color: "var(--text-muted)" }}>
+                      (optional)
+                    </span>
                   </label>
                   <input
                     type="text"
@@ -454,7 +602,12 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
                     placeholder="Lahore"
                   />
                   {fieldErrors.city && (
-                    <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{fieldErrors.city}</p>
+                    <p
+                      className="text-xs mt-1"
+                      style={{ color: "var(--danger)" }}
+                    >
+                      {fieldErrors.city}
+                    </p>
                   )}
                 </div>
 
@@ -470,17 +623,27 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
                   >
                     <option value="">Select province</option>
                     {PROVINCES.map((p) => (
-                      <option key={p} value={p}>{p}</option>
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
                     ))}
                   </select>
                   {fieldErrors.province && (
-                    <p className="text-xs mt-1" style={{ color: "var(--danger)" }}>{fieldErrors.province}</p>
+                    <p
+                      className="text-xs mt-1"
+                      style={{ color: "var(--danger)" }}
+                    >
+                      {fieldErrors.province}
+                    </p>
                   )}
                 </div>
 
                 <div>
                   <label className="label">
-                    Postal Code <span style={{ color: "var(--text-muted)" }}>(optional)</span>
+                    Postal Code{" "}
+                    <span style={{ color: "var(--text-muted)" }}>
+                      (optional)
+                    </span>
                   </label>
                   <input
                     type="text"
@@ -494,7 +657,10 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
 
                 <div className="sm:col-span-2">
                   <label className="label">
-                    Order Notes <span style={{ color: "var(--text-muted)" }}>(optional)</span>
+                    Order Notes{" "}
+                    <span style={{ color: "var(--text-muted)" }}>
+                      (optional)
+                    </span>
                   </label>
                   <textarea
                     name="notes"
@@ -510,24 +676,39 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
           </div>
 
           <div className="lg:col-span-1">
-            <div className="card p-6 sticky top-24" style={{ background: "var(--surface-soft)" }}>
-              <h2 className="heading-md mb-4" style={{ color: "var(--text-primary)" }}>Order Summary</h2>
+            <div
+              className="card p-6 sticky top-24"
+              style={{ background: "var(--surface-soft)" }}
+            >
+              <h2
+                className="heading-md mb-4"
+                style={{ color: "var(--text-primary)" }}
+              >
+                Order Summary
+              </h2>
 
               <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
                 {displayItems.map((item) => {
                   const itemProduct = isBuyNow ? item : item.product;
                   const itemVariant = isBuyNow ? item : item.variant;
-                  const itemName = isBuyNow ? item.productName : item.product.name;
+                  const itemName = isBuyNow
+                    ? item.productName
+                    : item.product.name;
                   const itemImage = isBuyNow ? item.image : item.product.image;
                   const itemQuantity = isBuyNow ? item.quantity : item.quantity;
                   const itemPrice = isBuyNow
                     ? (item.salePrice || item.regularPrice) * item.quantity
-                    : (item.product.salePrice ? item.product.salePrice * item.quantity : item.product.regularPrice * item.quantity);
+                    : item.product.salePrice
+                      ? item.product.salePrice * item.quantity
+                      : item.product.regularPrice * item.quantity;
                   const itemColor = isBuyNow ? item.color : item.variant.color;
                   const itemSize = isBuyNow ? item.size : item.variant.size;
 
                   return (
-                    <div key={item.id || buyNowVariantId} className="flex gap-3">
+                    <div
+                      key={item.id || buyNowVariantId}
+                      className="flex gap-3"
+                    >
                       <div
                         className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden"
                         style={{ background: "var(--surface)" }}
@@ -545,13 +726,23 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium line-clamp-1" style={{ color: "var(--text-primary)" }}>
+                        <p
+                          className="text-sm font-medium line-clamp-1"
+                          style={{ color: "var(--text-primary)" }}
+                        >
                           {itemName}
                         </p>
-                        <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                          {itemColor}{itemSize && ` / ${itemSize}`} &times; {itemQuantity}
+                        <p
+                          className="text-xs"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          {itemColor}
+                          {itemSize && ` / ${itemSize}`} &times; {itemQuantity}
                         </p>
-                        <p className="text-sm font-medium mt-0.5" style={{ color: "var(--text-primary)" }}>
+                        <p
+                          className="text-sm font-medium mt-0.5"
+                          style={{ color: "var(--text-primary)" }}
+                        >
                           {formatPrice(itemPrice)}
                         </p>
                       </div>
@@ -560,53 +751,106 @@ export default function CheckoutClient({ initialBuyNowItem = null, buyNowError =
                 })}
               </div>
 
-              <div className="space-y-2 text-sm" style={{ borderTop: "1px solid var(--border)", paddingTop: "1rem" }}>
+              <div
+                className="space-y-2 text-sm"
+                style={{
+                  borderTop: "1px solid var(--border)",
+                  paddingTop: "1rem",
+                }}
+              >
                 <div className="flex justify-between">
-                  <span style={{ color: "var(--text-secondary)" }}>Subtotal</span>
-                  <span style={{ color: "var(--text-primary)" }}>{formatPrice(displaySubtotal)}</span>
+                  <span style={{ color: "var(--text-secondary)" }}>
+                    Subtotal
+                  </span>
+                  <span style={{ color: "var(--text-primary)" }}>
+                    {formatPrice(displaySubtotal)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span style={{ color: "var(--text-secondary)" }}>Shipping</span>
+                  <span style={{ color: "var(--text-secondary)" }}>
+                    Shipping
+                  </span>
                   <span
                     className="font-medium"
-                    style={{ color: finalShippingFee === 0 ? "var(--success)" : "var(--text-primary)" }}
+                    style={{
+                      color:
+                        finalShippingFee === 0
+                          ? "var(--success)"
+                          : "var(--text-primary)",
+                    }}
                   >
-                    {finalShippingFee === 0 ? "Free" : formatPrice(finalShippingFee)}
+                    {finalShippingFee === 0
+                      ? "Free"
+                      : formatPrice(finalShippingFee)}
                   </span>
                 </div>
                 {finalShippingFee > 0 && freeShippingThreshold && (
                   <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-                    Free shipping on orders over PKR {freeShippingThreshold.toLocaleString("en-PK")}
+                    Free shipping on orders over PKR{" "}
+                    {freeShippingThreshold.toLocaleString("en-PK")}
                   </p>
                 )}
-                <div style={{ borderTop: "1px solid var(--border)", paddingTop: "0.5rem", marginTop: "0.5rem" }}>
+                <div
+                  style={{
+                    borderTop: "1px solid var(--border)",
+                    paddingTop: "0.5rem",
+                    marginTop: "0.5rem",
+                  }}
+                >
                   <div className="flex justify-between text-base font-semibold">
                     <span style={{ color: "var(--text-primary)" }}>Total</span>
-                    <span style={{ color: "var(--text-primary)" }}>{formatPrice(total)}</span>
+                    <span style={{ color: "var(--text-primary)" }}>
+                      {formatPrice(total)}
+                    </span>
                   </div>
                 </div>
               </div>
 
               <div
                 className="mt-4 p-3 rounded-lg"
-                style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+                style={{
+                  background: "var(--surface)",
+                  border: "1px solid var(--border)",
+                }}
               >
-                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Payment Method</p>
-                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Cash on Delivery (COD)</p>
+                <p
+                  className="text-sm font-medium"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  Payment Method
+                </p>
+                <p
+                  className="text-sm"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Cash on Delivery (COD)
+                </p>
               </div>
 
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isPlacingOrder}
                 className="btn btn-primary btn-full mt-6"
               >
-                {isSubmitting ? (
+                {isPlacingOrder ? (
                   <span className="flex items-center justify-center gap-2">
                     <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        fill="none"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
                     </svg>
-                    Placing Order...
+                    Processing...
                   </span>
                 ) : (
                   "Place Order"
